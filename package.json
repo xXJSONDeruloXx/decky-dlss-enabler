@@ -1,30 +1,29 @@
 {
-  "name": "decky-plugin-template",
-  "version": "0.0.1",
-  "description": "A template to quickly create decky plugins from scratch, based on TypeScript and webpack",
+  "name": "decky-dlss-enabler",
+  "version": "0.1.0",
+  "description": "Decky plugin to manage DLSS Enabler inside per-game Proton prefixes",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"No tests configured\""
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SteamDeckHomebrew/decky-plugin-template.git"
+    "url": "git+https://github.com/xXJSONDeruloXx/decky-dlss-enabler.git"
   },
   "keywords": [
     "decky",
-    "plugin",
-    "plugin-template",
     "steam-deck",
-    "deck"
+    "proton",
+    "dlss"
   ],
-  "author": "You <you@you.tld>",
+  "author": "xXJSONDeruloXx",
   "license": "BSD-3-Clause",
   "bugs": {
-    "url": "https://github.com/SteamDeckHomebrew/decky-plugin-template/issues"
+    "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/issues"
   },
-  "homepage": "https://github.com/SteamDeckHomebrew/decky-plugin-template#readme",
+  "homepage": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler#readme",
   "devDependencies": {
     "@decky/rollup": "^1.0.2",
     "@decky/ui": "^4.11.0",
@@ -47,5 +46,13 @@
         "react-dom"
       ]
     }
-  }
+  },
+  "remote_binary_bundling": true,
+  "remote_binary": [
+    {
+      "sha256hash": "a07b82de96e8c278184fe01409d7b4851a67865f7b8fed56332e40028dc3b41f",
+      "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins/version.dll",
+      "name": "version.dll"
+    }
+  ]
 }
