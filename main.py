@@ -32,14 +32,65 @@ SUPPORTED_METHODS = [
 
 
 class Plugin:
+    def _log(self, message: str) -> None:
+        decky.logger.info(f"[DLSS Enabler] {message}")
+
+    def _safe_sha256(self, path: Path) -> str | None:
+        try:
+            if path.exists() and path.is_file() and not path.is_symlink():
+                return self._file_sha256(path)
+        except Exception:
+            return None
+        return None
+
+    def _describe_path(self, path: Path) -> dict:
+        exists = path.exists() or path.is_symlink()
+        description = {
+            "path": str(path),
+            "exists": exists,
+            "is_symlink": path.is_symlink(),
+        }
+        if not exists:
+            return description
+
+        try:
+            stat_result = path.lstat() if path.is_symlink() else path.stat()
+            description["size"] = stat_result.st_size
+        except Exception:
+            pass
+
+        if path.is_symlink():
+            try:
+                description["symlink_target"] = os.readlink(path)
+            except Exception:
+                pass
+        else:
+            sha = self._safe_sha256(path)
+            if sha:
+                description["sha256"] = sha
+        return description
+
+    def _log_proxy_state(self, prefix: str, system32: Path, method: str) -> None:
+        normalized_method = self._normalize_method(method)
+        proxy_filename = f"{normalized_method}.dll"
+        proxy_path = system32 / proxy_filename
+        backup_path = system32 / f"{proxy_filename}{BACKUP_SUFFIX}"
+        marker_path = system32 / self._marker_filename(normalized_method)
+        markers = [marker.name for marker in self._marker_paths(system32)] if system32.exists() else []
+        self._log(
+            f"{prefix}: proxy={json.dumps(self._describe_path(proxy_path), sort_keys=True)} "
+            f"backup={json.dumps(self._describe_path(backup_path), sort_keys=True)} "
+            f"marker={json.dumps(self._describe_path(marker_path), sort_keys=True)} markers={markers}"
+        )
+
     async def _main(self):
-        decky.logger.info("DLSS Enabler plugin loaded")
+        self._log("plugin loaded")
 
     async def _unload(self):
-        decky.logger.info("DLSS Enabler plugin unloaded")
+        self._log("plugin unloaded")
 
     async def _uninstall(self):
-        decky.logger.info("DLSS Enabler plugin uninstalled")
+        self._log("plugin uninstalled")
 
     async def _migration(self):
         pass
@@ -69,6 +120,7 @@ class Plugin:
             raise FileNotFoundError(f"Bundled asset missing: {asset_path}")
 
         asset_hash = self._file_sha256(asset_path)
+        self._log(f"verify bundled asset: path={asset_path} sha256={asset_hash}")
         if asset_hash.lower() != BUNDLED_ASSET_SHA256.lower():
             raise RuntimeError(
                 f"Bundled asset hash mismatch for {asset_path.name}: expected {BUNDLED_ASSET_SHA256}, got {asset_hash}"
@@ -321,25 +373,32 @@ class Plugin:
         original_launch_options = ""
         cleaned_methods: list[str] = []
 
+        self._log(f"cleanup managed state: system32={system32} markers={[marker.name for marker in marker_paths]}")
         for marker_path in marker_paths:
             metadata = self._read_marker_metadata(marker_path)
+            self._log(f"cleanup marker metadata: {json.dumps(metadata, sort_keys=True)}")
             method = metadata.get("method")
             if not method:
                 continue
             if not original_launch_options:
                 original_launch_options = str(metadata.get("original_launch_options") or "")
+            self._log_proxy_state("cleanup before restore", system32, method)
             notes.extend(self._restore_method(system32, method))
             cleaned_methods.append(method)
+            self._log_proxy_state("cleanup after restore", system32, method)
             try:
                 marker_path.unlink()
+                self._log(f"cleanup removed marker: {marker_path}")
             except FileNotFoundError:
                 pass
 
-        return {
+        result = {
             "notes": notes,
             "original_launch_options": original_launch_options,
             "cleaned_methods": cleaned_methods,
         }
+        self._log(f"cleanup result: {json.dumps(result, sort_keys=True)}")
+        return result
 
     def _prepare_target_proxy(self, system32: Path, method: str) -> bool:
         method = self._normalize_method(method)
@@ -351,20 +410,31 @@ class Plugin:
         marker_for_method = system32 / self._marker_filename(method)
         same_method_already_managed = marker_for_method.exists()
 
+        self._log_proxy_state("prepare before", system32, method)
+        self._log(
+            f"prepare target proxy: method={method} same_method_already_managed={same_method_already_managed} "
+            f"proxy_is_bundled={self._is_bundled_proxy_file(proxy_path)} backup_exists={backup_path.exists() or backup_path.is_symlink()}"
+        )
+
         if backup_path.exists() or backup_path.is_symlink():
             if not same_method_already_managed:
                 stashed_backup = self._unique_stash_path(backup_path, "preexisting-backup")
                 backup_path.rename(stashed_backup)
+                self._log(f"prepare stashed preexisting backup to {stashed_backup}")
 
         if proxy_path.exists() or proxy_path.is_symlink():
             if same_method_already_managed and self._is_bundled_proxy_file(proxy_path):
                 self._remove_path(proxy_path)
+                self._log(f"prepare removed existing managed proxy {proxy_path}")
             elif self._is_bundled_proxy_file(proxy_path):
                 self._remove_path(proxy_path)
+                self._log(f"prepare removed bundled proxy without same-method marker {proxy_path}")
             else:
                 proxy_path.rename(backup_path)
                 backup_created = True
+                self._log(f"prepare moved existing proxy to backup {backup_path}")
 
+        self._log_proxy_state("prepare after", system32, method)
         return backup_created
 
     def _is_env_assignment(self, token: str) -> bool:
@@ -473,6 +543,7 @@ class Plugin:
 
     async def get_game_status(self, appid: str) -> dict:
         try:
+            self._log(f"get_game_status start: appid={appid}")
             paths = self._prefix_paths_for_appid(str(appid))
             installed_game = self._find_installed_games(str(appid))
             game_name = installed_game[0]["name"] if installed_game else str(appid)
@@ -529,6 +600,8 @@ class Plugin:
             proxy_filename = f"{method}.dll"
             proxy_path = system32 / proxy_filename
             patched = proxy_path.exists() or proxy_path.is_symlink()
+            self._log(f"get_game_status marker metadata: {json.dumps(metadata, sort_keys=True)}")
+            self._log_proxy_state("get_game_status", system32, method)
 
             if patched:
                 message = f"Patched using {proxy_filename}."
@@ -557,6 +630,9 @@ class Plugin:
     async def patch_game(self, appid: str, method: str, current_launch_options: str = "") -> dict:
         try:
             normalized_method = self._normalize_method(method)
+            self._log(
+                f"patch_game start: appid={appid} method={normalized_method} current_launch_options={json.dumps(current_launch_options)}"
+            )
             asset_path = self._verify_bundled_asset()
             paths = self._prefix_paths_for_appid(str(appid))
             installed_game = self._find_installed_games(str(appid))
@@ -570,15 +646,23 @@ class Plugin:
 
             system32 = paths["system32"]
             system32.mkdir(parents=True, exist_ok=True)
+            self._log(f"patch_game paths: compatdata={paths['compatdata_dir']} system32={system32} asset={asset_path}")
+            self._log_proxy_state("patch before cleanup", system32, normalized_method)
 
             preserved_launch_options = current_launch_options or ""
             cleanup_result = self._cleanup_managed_state(system32)
             if cleanup_result["original_launch_options"]:
                 preserved_launch_options = cleanup_result["original_launch_options"]
+            self._log(
+                f"patch after cleanup: preserved_launch_options={json.dumps(preserved_launch_options)} "
+                f"cleanup_result={json.dumps(cleanup_result, sort_keys=True)}"
+            )
 
             backup_created = self._prepare_target_proxy(system32, normalized_method)
             target_proxy_path = system32 / f"{normalized_method}.dll"
+            self._log(f"patch copy start: source={asset_path} target={target_proxy_path}")
             shutil.copy2(asset_path, target_proxy_path)
+            self._log_proxy_state("patch after copy", system32, normalized_method)
 
             copied_hash = self._file_sha256(target_proxy_path)
             if copied_hash.lower() != BUNDLED_ASSET_SHA256.lower():
@@ -595,14 +679,16 @@ class Plugin:
                 original_launch_options=preserved_launch_options,
                 backup_created=backup_created,
             )
+            self._log(f"patch wrote marker: {json.dumps(self._read_marker_metadata(marker_path), sort_keys=True)}")
 
             managed_launch_options = self._build_managed_launch_options(preserved_launch_options, normalized_method)
+            self._log(f"patch managed launch options: {json.dumps(managed_launch_options)}")
             cleanup_notes = cleanup_result.get("notes") or []
             message = f"Patched {game_name} using {normalized_method}.dll."
             if cleanup_notes:
                 message = f"{message} Cleaned previous managed state first."
 
-            return {
+            result = {
                 "status": "success",
                 "appid": str(appid),
                 "name": game_name,
@@ -619,12 +705,16 @@ class Plugin:
                     "marker": str(marker_path),
                 },
             }
+            self._log_proxy_state("patch success final state", system32, normalized_method)
+            self._log(f"patch success: {json.dumps(result, sort_keys=True)}")
+            return result
         except Exception as exc:
-            decky.logger.error(f"patch_game failed for {appid}: {exc}")
+            decky.logger.error(f"[DLSS Enabler] patch_game failed for {appid}: {exc}")
             return {"status": "error", "message": str(exc)}
 
     async def unpatch_game(self, appid: str) -> dict:
         try:
+            self._log(f"unpatch_game start: appid={appid}")
             paths = self._prefix_paths_for_appid(str(appid))
             installed_game = self._find_installed_games(str(appid))
             game_name = installed_game[0]["name"] if installed_game else str(appid)
@@ -640,6 +730,11 @@ class Plugin:
 
             system32 = paths["system32"]
             markers = self._marker_paths(system32)
+            self._log(f"unpatch markers: {[marker.name for marker in markers]}")
+            for marker in markers:
+                marker_method = self._marker_method_from_name(marker.name)
+                if marker_method:
+                    self._log_proxy_state("unpatch before cleanup", system32, marker_method)
             if not markers:
                 return {
                     "status": "success",
@@ -657,7 +752,7 @@ class Plugin:
             cleaned_methods = cleanup_result.get("cleaned_methods") or []
             methods_display = ", ".join(f"{method}.dll" for method in cleaned_methods) if cleaned_methods else "managed proxy"
 
-            return {
+            result = {
                 "status": "success",
                 "appid": str(appid),
                 "name": game_name,
@@ -669,8 +764,12 @@ class Plugin:
                 },
                 "notes": cleanup_result.get("notes") or [],
             }
+            self._log(f"unpatch success: {json.dumps(result, sort_keys=True)}")
+            for method in cleaned_methods:
+                self._log_proxy_state("unpatch final state", system32, method)
+            return result
         except Exception as exc:
-            decky.logger.error(f"unpatch_game failed for {appid}: {exc}")
+            decky.logger.error(f"[DLSS Enabler] unpatch_game failed for {appid}: {exc}")
             return {"status": "error", "message": str(exc)}
 
 
