@@ -1,12 +1,12 @@
-# Decky DLSS Enabler
-
-Decky plugin for per-game DLSS Enabler management on Steam Deck.
-
 <p align="center">
    <a href="https://ko-fi.com/B0B71HZTAX" target="_blank" rel="noopener noreferrer">
       <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support on Ko-fi"/>
    </a>
 </p>
+
+# Decky DLSS Enabler
+
+Decky plugin for per-game DLSS Enabler management on Steam Deck.
 
 ## Function
 
