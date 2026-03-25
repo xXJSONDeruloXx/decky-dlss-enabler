@@ -25,6 +25,7 @@ For a selected Steam game, the plugin:
   - `WINEDLLOVERRIDES=<method>=n,b`
   - `SteamDeck=0 %command%`
 - restores the previous Steam launch options on unpatch
+- optionally installs experimental FSR4 INT8 4.0.2b sidecar files (`amd_fidelityfx_*.dll` + `OptiScaler.ini`)
 
 ## Methods
 
@@ -52,11 +53,15 @@ Legacy versioned markers from older plugin releases are still recognized and upg
 
 ## Bundled asset
 
-Expected bundled file:
+Expected bundled files:
 
 - `bin/version.dll`
 - version `4.4.0.2-dev`
 - sha256 `7357292a3ced57c194f60bd2cbfc8f3837604b2365af114a2a4bc61508e9d5c6`
+- optional experimental FSR4 sidecar bundle:
+  - `bin/amd_fidelityfx_dx12.dll`
+  - `bin/amd_fidelityfx_framegeneration_dx12.dll`
+  - `bin/amd_fidelityfx_upscaler_dx12.dll` (`4.0.2b`)
 
 ## Build
 
