@@ -2,7 +2,8 @@
   "games": {
     "171": {
       "notes": [
-        "FSR3 inputs are disabled by default due to startup crashes. Use OptiPatcher to unlock DLSS and DLSS-FG inputs without spoofing. To still use FSR3 inputs: 1. In the game's Engine.ini file (create it if it doesn't exist), add these commands, and make it read-only. 2. In OptiScaler.ini, Set EnableFsr3Inputs=true."
+        "FSR3 inputs are disabled by default due to startup crashes. Use OptiPatcher to unlock DLSS and DLSS-FG inputs without spoofing. To still use FSR3 inputs: 1. In the game's Engine.ini file (create it if it doesn't exist), add these commands, and make it read-only. 2. In OptiScaler.ini, Set EnableFsr3Inputs=true.",
+        "The wiki's EnableFsr3Inputs=true guidance depends on additional Engine.ini tweaks and making that file read-only, so it is not auto-applied here."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -85,7 +86,8 @@
       "notes": [
         "FSR2 cannot be hooked, DLSS inputs are required.",
         "If game is crashing during startup, try disabling the Epic Games Store overlay by: Setting DisableOverlays=true at OptiScaler.ini or Renaming these two files located at C:\\Program Files (x86)\\Epic Games\\Launcher\\Portal\\Extras\\Overlay to any other name: EOSOverlayRenderer-Win64-Shipping.exe EOSOverlayRenderer-Win32-Shipping.exe",
-        "To reduce ghosting, you need to disable lens distortion in the game's configuration file located at %LOCALAPPDATA%\\Remedy\\AlanWake2\\renderer.ini by setting the following \"m_bLensDistortion\": false,"
+        "To reduce ghosting, you need to disable lens distortion in the game's configuration file located at %LOCALAPPDATA%\\Remedy\\AlanWake2\\renderer.ini by setting the following \"m_bLensDistortion\": false,",
+        "The wiki's DisableOverlays=true recommendation is a startup-crash workaround tied to the Epic overlay, so it is kept as a note rather than auto-applied."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -119,7 +121,8 @@
         "OptiScaler wiki lists multiple compatible DLL names: d3d12.dll, winhttp.dll, winmm.dll.",
         "Enabling Reflex on AMD/Intel will crash the game. Nukem's DLSSG requires setting OverrideNvapiDll=false to not crash in Vulkan _(automatic since 0.9-pre10)_.",
         "Linux users may need to set UseNtdllHooks=false for upscaler inputs to be hooked.",
-        "Upscalers disengage when opening menus and re-engage when closing them, resulting in noticeable stutter. |Notes|"
+        "Upscalers disengage when opening menus and re-engage when closing them, resulting in noticeable stutter. |Notes|",
+        "The wiki's OverrideNvapiDll=false recommendation is specific to Nukem's DLSSG on the Vulkan path and is noted as automatic in newer OptiScaler versions, so it is not auto-applied here."
       ],
       "recommended_method": null,
       "recommended_methods": [
@@ -255,7 +258,8 @@
         "OptiScaler wiki lists multiple compatible DLL names: dxgi.dll, version.dll, winmm.dll.",
         "FSR3 inputs are disabled by default due to startup and 3rd person switch crashes. Use OptiPatcher to unlock DLSS and DLSS-FG inputs without spoofing. To fix them: 1. In %LOCALAPPDATA%\\Alabama\\Saved\\Config\\Windows\\Engine.ini (Steam/Battle.net) or %LOCALAPPDATA%\\Alabama\\Saved\\Config\\WinGDK\\Engine.ini (Xbox), add these lines, and make it read-only. 2. Set EnableFsr3Inputs=true in OptiScaler.ini.",
         "Slight ghosting on weapons seems to be a lingering effect, not related to Nukem's mod.",
-        "To fix freezes during NPC conversations on Ultrawide screens (source): Install Lyall's UltrawidePatches (doesn't work on game version 2.0 ). or Use OptiFG with HudFix enabled."
+        "To fix freezes during NPC conversations on Ultrawide screens (source): Install Lyall's UltrawidePatches (doesn't work on game version 2.0 ). or Use OptiFG with HudFix enabled.",
+        "The wiki's EnableFsr3Inputs=true guidance depends on additional Engine.ini tweaks and making that file read-only, so it is not auto-applied here."
       ],
       "recommended_method": null,
       "recommended_methods": [
@@ -271,7 +275,8 @@
     },
     "Banishers-Ghosts-of-New-Eden": {
       "notes": [
-        "FSR2 inputs are disabled by default as they cause crashes. Use OptiPatcher to unlock DLSS and DLSS-FG inputs without spoofing. To fix them: 1. Create a file called Engine.ini in %LOCALAPPDATA%\\Banishers Ghosts of New Eden\\Saved\\Config\\Windows, add these lines, and make it read-only. 2. Set EnableFsr2Inputs=true In OptiScaler.ini."
+        "FSR2 inputs are disabled by default as they cause crashes. Use OptiPatcher to unlock DLSS and DLSS-FG inputs without spoofing. To fix them: 1. Create a file called Engine.ini in %LOCALAPPDATA%\\Banishers Ghosts of New Eden\\Saved\\Config\\Windows, add these lines, and make it read-only. 2. Set EnableFsr2Inputs=true In OptiScaler.ini.",
+        "The wiki's EnableFsr2Inputs=true guidance depends on additional Engine.ini tweaks and making that file read-only, so it is not auto-applied here."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -291,14 +296,19 @@
         "Spoofing on Linux may require changes in dxvk.conf\u2014read more here. Recommended to use OptiPatcher.",
         "Spoofing causes blue texture corruptions. Use OptiPatcher to unlock DLSS and DLSS-FG inputs without spoofing (recommended). or Disable spoofing by setting Dxgi=false in OptiScaler.ini.",
         "In-game resolution scale resets to the nearest preset on the next launch, i.e., 99% -> 100%, 75% -> 66%. Ratio override doesn't work. FSR4 inputs do not have that issue.",
-        "Native FSR FG loses its smoothness while OptiScaler is active."
+        "Native FSR FG loses its smoothness while OptiScaler is active.",
+        "On AMD/Intel, the wiki says spoofing can cause blue texture corruptions, so Dxgi=false is a good default unless you are deliberately relying on spoofing behavior."
       ],
       "recommended_method": null,
       "recommended_methods": [
         "dxgi",
         "winmm"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Spoofing": {
+          "Dxgi": "false"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Black-Myth-Wukong",
       "steam_name": "Black Myth Wukong",
@@ -310,13 +320,18 @@
         "Reflex is unlocked without spoofing.",
         "Disable spoofing by setting Dxgi=false in OptiScaler.ini to avoid performance overhead. Use FSR3.1 FSR 3.1 FG inputs instead.",
         "Nukem's DLSSG will cause intense flickering if Non-Linear sRGB Input is enabled with FG active.",
-        "Turning on Fix broken visuals with Nukem's DLSSG crashes the game."
+        "Turning on Fix broken visuals with Nukem's DLSSG crashes the game.",
+        "The wiki recommends disabling spoofing with Dxgi=false to avoid performance overhead and using FSR3.1 + FSR 3.1 FG inputs instead."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Spoofing": {
+          "Dxgi": "false"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Borderlands-4",
       "steam_name": "Borderlands 4",
@@ -683,13 +698,18 @@
     },
     "Dragon-Age-The-Veilguard": {
       "notes": [
-        "Using RT while Spoofing ON seems to cause crashes - set Dxgi=false in OptiScaler.ini"
+        "Using RT while Spoofing ON seems to cause crashes - set Dxgi=false in OptiScaler.ini",
+        "On AMD/Intel, the wiki says using RT while spoofing can crash the game, so Dxgi=false is a safer default."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Spoofing": {
+          "Dxgi": "false"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Dragon-Age-The-Veilguard",
       "steam_name": "Dragon Age The Veilguard",
@@ -748,13 +768,18 @@
         "Game has XeFG, but ships with XeSS 2.0 files. Updating to XeSS 2.1 unlocks XeFG for everyone and seems to work well.",
         "SL Spoof seems to unlock everything on 9070XT, so Dxgi=false is recommended _Autoapplied in Opti 0.9_",
         "Mouse click input not hooked properly - use keyboard to navigate and apply settings (arrow keys, Tab and Space)",
-        "Reflex markers are working questionably, but needs verification"
+        "Reflex markers are working questionably, but needs verification",
+        "The wiki recommends Dxgi=false on AMD/Intel and notes that this behavior is auto-applied in newer OptiScaler versions."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Spoofing": {
+          "Dxgi": "false"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Dying-Light-The-Beast",
       "steam_name": "Dying Light The Beast",
@@ -883,13 +908,19 @@
         "GPUs without DirectX 12 Ultimate support should set D3DFeatureLevel=true in OptiScaler.ini - only works for GTX 1600 series, GTX 1000 series are not supported at all",
         "Using Output Scaling (with DLSS) might cause graphical corruption after cutscenes",
         "Spoofing to Nvidia may cause increased stutters or even crashes - use OptiPatcher to unlock DLSS without spoofing",
-        "Game seems to feed low health screen effects into the FG HUDless and effectively stop interpolation Using this mod should help - Remove Low Health Screen Effect"
+        "Game seems to feed low health screen effects into the FG HUDless and effectively stop interpolation Using this mod should help - Remove Low Health Screen Effect",
+        "The wiki says ColorResourceBarrier=4 fixes Xmas artifacts / dark glitches after the game update that broke UE reporting.",
+        "The D3DFeatureLevel=true note in the wiki only applies to GTX 1600-series cards, so it is not auto-applied here."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Hotfix": {
+          "ColorResourceBarrier": "4"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/FINAL-FANTASY-VII-REBIRTH",
       "steam_name": "FINAL FANTASY VII REBIRTH",
@@ -997,7 +1028,8 @@
       "notes": [
         "<s>Spoofing causes blue/dark texture corruptions on AMD/Intel - hence Dxgi=false</s>",
         "Game patch 1.3 which updated the engine to UE 5.4 seems to have fixed the spoofing issue mentioned above",
-        "FSR 3.1 inputs require this 3.1 inputs crashing fix, otherwise crash on switch - or just disable them with EnableFfxInputs=false, or on older Opti, Ffx=false in Optiscaler.ini"
+        "FSR 3.1 inputs require this 3.1 inputs crashing fix, otherwise crash on switch - or just disable them with EnableFfxInputs=false, or on older Opti, Ffx=false in Optiscaler.ini",
+        "The older Dxgi=false workaround in the wiki is struck through and appears obsolete after the UE 5.4 update, so it is not auto-applied here."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -1362,6 +1394,23 @@
       "steam_name": "Immortals of Aveum",
       "wiki_slug": "Immortals-of-Aveum"
     },
+    "Indiana-Jones-and-the-Great-Circle": {
+      "notes": [
+        "OptiScaler wiki lists multiple compatible install methods, including dxgi.dll and winmm.dll; ASI-based setups are also described.",
+        "If FSR FG is turned on and the OptiScaler overlay crashes the game, the wiki says OverlayMenu=false can help, but that is a conditional workaround so it is not auto-applied here.",
+        "On AMD, if Nukems FG stutters, the wiki recommends forcing Reflex disabled in the Opti overlay rather than an OptiScaler.ini override."
+      ],
+      "recommended_method": null,
+      "recommended_methods": [
+        "dxgi",
+        "winmm"
+      ],
+      "recommended_optiscaler_ini_overrides": {},
+      "source": "OptiScaler wiki",
+      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Indiana-Jones-and-the-Great-Circle",
+      "steam_name": "Indiana Jones and the Great Circle",
+      "wiki_slug": "Indiana-Jones-and-the-Great-Circle"
+    },
     "Keeper": {
       "notes": [
         "Recommended to use XeSS inputs if you want to avoid spoofing, or expose DLSS inputs without spoofing with OptiPatcher",
@@ -1617,23 +1666,49 @@
       "notes": [
         "Requires REFramework to work _Also recommended to change REF overlay's shortcut to Delete or any other button in Configuration - Menu key as both REF and Opti use Insert as the default shortcut key_ Download - REF Nightly (_find the appropriate game file under Assets_)",
         "INSTALL METHOD 1 Keep REFramework's default dinput8.dll Either install OptiScaler as dxgi.dll or manually rename OptiScaler.dll to dxgi.dll",
-        "_Set Dxgi=false if on AMD/Intel as SL Spoof already unlocks everything DLSS related (autoapplied in 0.9-pre11)_"
+        "_Set Dxgi=false if on AMD/Intel as SL Spoof already unlocks everything DLSS related (autoapplied in 0.9-pre11)_",
+        "On AMD/Intel, the wiki says Dxgi=false is recommended because SL spoof already unlocks the DLSS-related options in this game."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Spoofing": {
+          "Dxgi": "false"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Monster-Hunter-Stories-3-Twisted-Reflection",
       "steam_name": "Monster Hunter Stories 3 Twisted Reflection",
       "wiki_slug": "Monster-Hunter-Stories-3-Twisted-Reflection"
     },
+    "Monster-Hunter-Wilds": {
+      "notes": [
+        "Requires REFramework to work.",
+        "On AMD/Intel, the wiki recommends Dxgi=false because Streamline spoof already unlocks the DLSS-related options in this game.",
+        "Method 3 in the wiki recommends LoadReshade=true when loading REFramework through OptiScaler; that is method-specific and is not auto-applied here."
+      ],
+      "recommended_method": "dxgi",
+      "recommended_methods": [
+        "dxgi"
+      ],
+      "recommended_optiscaler_ini_overrides": {
+        "Spoofing": {
+          "Dxgi": "false"
+        }
+      },
+      "source": "OptiScaler wiki",
+      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Monster-Hunter-Wilds",
+      "steam_name": "Monster Hunter Wilds",
+      "wiki_slug": "Monster-Hunter-Wilds"
+    },
     "NINJA-GAIDEN-2-Black": {
       "notes": [
         "OptiScaler wiki lists multiple compatible DLL names: dxgi.dll, winmm.dll.",
         "With spoofing active, FSR FG seems to be disabled? - Can use DLSS FG with Nukem in that case (or set Dxgi=false in Optiscaler.ini if you want native FSR FG with replaced FSR upscaler)",
-        "UWP GamePass version seems to crash on FSR inputs, so try DLSS or XeSS (also for FSR4 upgrade) - if the game is crashing on boot, try removing the mod and disable upscalers in-game first"
+        "UWP GamePass version seems to crash on FSR inputs, so try DLSS or XeSS (also for FSR4 upgrade) - if the game is crashing on boot, try removing the mod and disable upscalers in-game first",
+        "The wiki's Dxgi=false suggestion is specifically for native FSR FG with replaced FSR upscaler, so it is not auto-applied here."
       ],
       "recommended_method": null,
       "recommended_methods": [
@@ -1797,6 +1872,19 @@
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Portal-Prelude-RTX",
       "steam_name": "Portal Prelude RTX",
       "wiki_slug": "Portal-Prelude-RTX"
+    },
+    "Prey-Luma-Remastered-mod": {
+      "notes": [
+        "Requires the Prey Remastered Luma mod and ReShade with add-on support.",
+        "The wiki describes method-specific setups where LoadReshade=true may be needed or DontCreateD3D12DeviceForLuma=true may help if crashing; those are install-method-specific and are not auto-applied here."
+      ],
+      "recommended_method": null,
+      "recommended_methods": [],
+      "recommended_optiscaler_ini_overrides": {},
+      "source": "OptiScaler wiki",
+      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Prey-Luma-Remastered-mod",
+      "steam_name": "Prey Luma Remastered mod",
+      "wiki_slug": "Prey-Luma-Remastered-mod"
     },
     "Quarantine-Zone-The-Last-Check": {
       "notes": [
@@ -2104,13 +2192,18 @@
         "_Set Dxgi=false if on AMD/Intel as SL Spoof already unlocks everything DLSS related (autoapplied in 0.9-pre10)_",
         "Crashes even with REF due to Crapcom anti-modding DRM - _wait for further REF/Opti fixes_",
         "XeFG seems to disable the REF overlay",
-        "If it's similar to MH Wilds, DLSSG via SL -> XeFG may crash on boot - seems to depend on the vendor??? _Works on 9070XT and 5070 Ti_"
+        "If it's similar to MH Wilds, DLSSG via SL -> XeFG may crash on boot - seems to depend on the vendor??? _Works on 9070XT and 5070 Ti_",
+        "On AMD/Intel, the wiki says Dxgi=false is recommended because SL spoof already unlocks the DLSS-related options in this game."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Spoofing": {
+          "Dxgi": "false"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Resident-Evil-9-Requiem",
       "steam_name": "Resident Evil 9 Requiem",
@@ -2152,7 +2245,8 @@
     "Rise-of-the-Tomb-Raider": {
       "notes": [
         "If you get weird Xmas artifacts, try disabling in-game Screen Effects (other possible fixes - AutoExposure=true, or ColorResourceBarrier=4 in Optiscaler.ini)",
-        "Xmas artifacts"
+        "Xmas artifacts",
+        "The wiki mentions ColorResourceBarrier=4 only as one possible fix for Xmas artifacts, so it is kept as a troubleshooting note rather than auto-applied."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -2168,7 +2262,8 @@
       "notes": [
         "When using OptiPatcher, due to extra checks when not spoofing, to expose DLSS/DLSS-FG properly, requires setting UpscalingMethod=2 in GameUserSettings.ini in AppData\\Local\\RoboCop\\Saved\\Config\\Windows (also maybe NvidiaReflexLowLatency=1 if it isn't exposed already) _Switching away from DLSS in game settings will require repeating this step_",
         "Spoofing on Intel Arc GPUs seems to cause rainbow artifacts - use Dxgi=false in Optiscaler.ini and stick to FSR3 or XeSS inputs - link",
-        "Native coupled FSR 3.0 FG doesn't play well when replacing FSR upscaler with Optiscaler (not smooth, drunken feeling)"
+        "Native coupled FSR 3.0 FG doesn't play well when replacing FSR upscaler with Optiscaler (not smooth, drunken feeling)",
+        "The wiki's Dxgi=false recommendation is specifically for Intel Arc rainbow-artifact issues, so it is not auto-applied here for all GPUs."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -2216,7 +2311,8 @@
         "OptiScaler wiki lists multiple compatible DLL names: dxgi.dll, winmm.dll.",
         "XeSS input only works for XeSS or FSR4 outputs.",
         "Intel Arc GPUs seem to present weird colour \"rainbow\" artifacts when spoofing. Set Dxgi=false.",
-        "FSR 3.1 upscaling inputs seem to have bad image quality, recommend using DLSS/XeSS inputs instead."
+        "FSR 3.1 upscaling inputs seem to have bad image quality, recommend using DLSS/XeSS inputs instead.",
+        "The wiki's Dxgi=false recommendation is specifically for Intel Arc rainbow-artifact issues, so it is not auto-applied here for all GPUs."
       ],
       "recommended_method": null,
       "recommended_methods": [
@@ -2324,6 +2420,19 @@
       "steam_name": "Scorn",
       "wiki_slug": "Scorn"
     },
+    "SekiroTSR": {
+      "notes": [
+        "Requires the SekiroTSR mod plus a ReShade add-on-capable install to expose DLSS inputs.",
+        "The wiki describes method-specific setups where LoadReshade=true may be needed or DontCreateD3D12DeviceForLuma=true may help if crashing; those are install-method-specific and are not auto-applied here."
+      ],
+      "recommended_method": null,
+      "recommended_methods": [],
+      "recommended_optiscaler_ini_overrides": {},
+      "source": "OptiScaler wiki",
+      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/SekiroTSR",
+      "steam_name": "SekiroTSR",
+      "wiki_slug": "SekiroTSR"
+    },
     "Senua's-Saga-Hellblade-II": {
       "notes": [],
       "recommended_method": "dxgi",
@@ -2430,13 +2539,18 @@
       "notes": [
         "Spoofing seems to break interior shadows - recommended to disable spoofing with Dxgi=false and use FSR or XeSS inputs",
         "Full game was updated to FSR 3.1, so the below fix should no longer be needed - demo is still FSR 3.0 tho",
-        "OLD - <s>Game uses a custom FSR 3.0 interface which results in a crash when Optiscaler tries hooking the inputs. To fix crashes, set Fsr3=false in Optiscaler.ini and use DLSS or XeSS inputs</s>"
+        "OLD - <s>Game uses a custom FSR 3.0 interface which results in a crash when Optiscaler tries hooking the inputs. To fix crashes, set Fsr3=false in Optiscaler.ini and use DLSS or XeSS inputs</s>",
+        "The wiki recommends disabling spoofing with Dxgi=false because spoofing can break interior shadows."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Spoofing": {
+          "Dxgi": "false"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Star-Wars-Outlaws",
       "steam_name": "Star Wars Outlaws",
