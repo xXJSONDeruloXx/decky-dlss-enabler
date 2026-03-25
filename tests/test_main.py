@@ -116,9 +116,6 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.sidecar_loader_bytes = b"fake optiscaler loader dll"
         self.sidecar_loader_hash = hashlib.sha256(self.sidecar_loader_bytes).hexdigest()
         (self.sidecar_dir / "amd_fidelityfx_dx12.dll").write_bytes(self.sidecar_loader_bytes)
-        self.sidecar_framegen_bytes = b"fake optiscaler framegen dll"
-        self.sidecar_framegen_hash = hashlib.sha256(self.sidecar_framegen_bytes).hexdigest()
-        (self.sidecar_dir / "amd_fidelityfx_framegeneration_dx12.dll").write_bytes(self.sidecar_framegen_bytes)
         self.sidecar_upscaler_bytes = b"fake fsr4 int8 upscaler dll"
         self.sidecar_upscaler_hash = hashlib.sha256(self.sidecar_upscaler_bytes).hexdigest()
         (self.sidecar_dir / "amd_fidelityfx_upscaler_dx12.dll").write_bytes(self.sidecar_upscaler_bytes)
@@ -155,12 +152,6 @@ class PatchUnpatchFlowTests(unittest.TestCase):
                     "target_name": "amd_fidelityfx_dx12.dll",
                     "sha256": self.sidecar_loader_hash,
                     "kind": "ffx-loader",
-                },
-                {
-                    "asset_name": "amd_fidelityfx_framegeneration_dx12.dll",
-                    "target_name": "amd_fidelityfx_framegeneration_dx12.dll",
-                    "sha256": self.sidecar_framegen_hash,
-                    "kind": "ffx-framegen",
                 },
                 {
                     "asset_name": "amd_fidelityfx_upscaler_dx12.dll",
@@ -351,16 +342,16 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.assertTrue(result["fsr4_enabled"])
         self.assertEqual(result["fsr4_bundle_id"], self.fake_fsr4_bundle["id"])
         self.assertEqual((self.target_dir / "amd_fidelityfx_dx12.dll").read_bytes(), self.sidecar_loader_bytes)
-        self.assertEqual((self.target_dir / "amd_fidelityfx_framegeneration_dx12.dll").read_bytes(), self.sidecar_framegen_bytes)
         self.assertEqual((self.target_dir / "amd_fidelityfx_upscaler_dx12.dll").read_bytes(), self.sidecar_upscaler_bytes)
         config_text = (self.target_dir / plugin_main.FSR4_CONFIG_FILENAME).read_text(encoding="utf-8")
         self.assertIn("Fsr4Update=true", config_text)
         self.assertIn("Dx12Upscaler=fsr31", config_text)
+        self.assertIn("FGType=Nukems", config_text)
 
         marker = self.read_marker_metadata("dxgi")
         self.assertTrue(marker["fsr4_enabled"])
         self.assertEqual(marker["fsr4_bundle_id"], self.fake_fsr4_bundle["id"])
-        self.assertEqual(len(marker["managed_files"]), 4)
+        self.assertEqual(len(marker["managed_files"]), 3)
 
     def test_unpatch_restores_previous_fsr4_sidecar_files(self):
         original_loader = self.target_dir / "amd_fidelityfx_dx12.dll"
@@ -370,11 +361,28 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.assertEqual(patch_result["status"], "success")
         self.assertEqual(original_loader.read_bytes(), self.sidecar_loader_bytes)
 
+        config_path = self.target_dir / plugin_main.FSR4_CONFIG_FILENAME
+        config_path.write_text("runtime-mutated-config", encoding="utf-8")
+        unexpected_config_path = self.target_dir / "OptiScaler.ini.unexpected.test"
+        unexpected_config_path.write_text("stashed-config", encoding="utf-8")
+        runtime_artifacts = [
+            "dlss-enabler.ini",
+            "dlss-enabler.log",
+            "dlssg_to_fsr3_amd_is_better.dll",
+            "fakenvapi.log",
+        ]
+        for filename in runtime_artifacts:
+            (self.target_dir / filename).write_bytes(b"runtime-artifact")
+
         unpatch_result = self.run_async(self.plugin.unpatch_game("123"))
         self.assertEqual(unpatch_result["status"], "success")
         self.assertEqual(original_loader.read_bytes(), b"original loader")
         self.assertIn("Restored original amd_fidelityfx_dx12.dll", unpatch_result["notes"])
-        self.assertFalse((self.target_dir / plugin_main.FSR4_CONFIG_FILENAME).exists())
+        self.assertIn("Removed modified OptiScaler.ini", unpatch_result["notes"])
+        self.assertFalse(config_path.exists())
+        self.assertFalse(unexpected_config_path.exists())
+        for filename in runtime_artifacts:
+            self.assertFalse((self.target_dir / filename).exists())
 
     def test_get_game_status_reports_fsr4_bundle_state(self):
         patch_result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True))

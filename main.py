@@ -43,12 +43,6 @@ FSR4_INT8_BUNDLE = {
             "kind": "ffx-loader",
         },
         {
-            "asset_name": "amd_fidelityfx_framegeneration_dx12.dll",
-            "target_name": "amd_fidelityfx_framegeneration_dx12.dll",
-            "sha256": "a6f0021a1c8f3f510d3ebf0289be00a3703d9d006dc5699614ff87c34f737297",
-            "kind": "ffx-framegen",
-        },
-        {
             "asset_name": "amd_fidelityfx_upscaler_dx12.dll",
             "target_name": "amd_fidelityfx_upscaler_dx12.dll",
             "sha256": "2604c0b392072d715b400b2f89434274de31995a4b6e68ce38250ebbd3f6c5fc",
@@ -57,6 +51,15 @@ FSR4_INT8_BUNDLE = {
     ],
 }
 FSR4_CONFIG_FILENAME = "OptiScaler.ini"
+KNOWN_RUNTIME_ARTIFACT_FILENAMES = [
+    "dlss-enabler.ini",
+    "dlss-enabler.log",
+    "dlssg_to_fsr3_amd_is_better.dll",
+    "fakenvapi.log",
+]
+KNOWN_RUNTIME_ARTIFACT_GLOBS = [
+    "OptiScaler.ini.unexpected.*",
+]
 MARKER_PREFIX = "DLSS_ENABLER_"
 MARKER_SUFFIX = "_DLL"
 BACKUP_SUFFIX = ".backup"
@@ -148,7 +151,9 @@ class Plugin:
             "Fsr4Update=true\n"
             "FsrAgilitySDKUpgrade=auto\n\n"
             "[Upscalers]\n"
-            "Dx12Upscaler=fsr31\n"
+            "Dx12Upscaler=fsr31\n\n"
+            "[FrameGen]\n"
+            "FGType=Nukems\n"
         )
 
     def _bytes_sha256(self, payload: bytes) -> str:
@@ -779,7 +784,13 @@ class Plugin:
 
         return backup_created
 
-    def _restore_managed_file(self, target_path: Path, expected_sha256: str | None) -> list[str]:
+    def _restore_managed_file(
+        self,
+        target_path: Path,
+        expected_sha256: str | None,
+        *,
+        remove_if_unexpected: bool = False,
+    ) -> list[str]:
         notes: list[str] = []
         filename = target_path.name
         backup_path = target_path.with_name(f"{filename}{BACKUP_SUFFIX}")
@@ -791,6 +802,9 @@ class Plugin:
             if file_exists:
                 if self._is_managed_file_sha(target_path, expected_sha256):
                     self._remove_path(target_path)
+                elif remove_if_unexpected:
+                    self._remove_path(target_path)
+                    notes.append(f"Removed modified {filename}")
                 else:
                     stashed_path = self._unique_stash_path(target_path, "unexpected")
                     target_path.rename(stashed_path)
@@ -801,6 +815,9 @@ class Plugin:
             if self._is_managed_file_sha(target_path, expected_sha256):
                 self._remove_path(target_path)
                 notes.append(f"Removed managed {filename}")
+            elif remove_if_unexpected:
+                self._remove_path(target_path)
+                notes.append(f"Removed modified {filename}")
             else:
                 stashed_path = self._unique_stash_path(target_path, "unexpected")
                 target_path.rename(stashed_path)
@@ -812,6 +829,22 @@ class Plugin:
         proxy_filename = f"{self._normalize_method(method)}.dll"
         proxy_path = target_dir / proxy_filename
         return self._restore_managed_file(proxy_path, BUNDLED_ASSET_SHA256)
+
+    def _cleanup_known_runtime_artifacts(self, target_dir: Path) -> list[str]:
+        notes: list[str] = []
+
+        for filename in KNOWN_RUNTIME_ARTIFACT_FILENAMES:
+            artifact_path = target_dir / filename
+            if artifact_path.exists() or artifact_path.is_symlink():
+                self._remove_path(artifact_path)
+                notes.append(f"Removed runtime artifact {filename}")
+
+        for pattern in KNOWN_RUNTIME_ARTIFACT_GLOBS:
+            for artifact_path in sorted(target_dir.glob(pattern)):
+                self._remove_path(artifact_path)
+                notes.append(f"Removed runtime artifact {artifact_path.name}")
+
+        return notes
 
     def _cleanup_install_root(self, install_root: Path) -> dict:
         marker_paths = self._find_markers_under_install_root(install_root)
@@ -837,9 +870,17 @@ class Plugin:
                 expected_sha256 = managed_file.get("sha256")
                 if not target_path_value:
                     continue
-                notes.extend(self._restore_managed_file(Path(str(target_path_value)), expected_sha256))
+                remove_if_unexpected = managed_file.get("kind") == "optiscaler-config"
+                notes.extend(
+                    self._restore_managed_file(
+                        Path(str(target_path_value)),
+                        expected_sha256,
+                        remove_if_unexpected=remove_if_unexpected,
+                    )
+                )
 
             notes.extend(self._restore_method_in_dir(target_dir, method))
+            notes.extend(self._cleanup_known_runtime_artifacts(target_dir))
             cleaned_methods.append(method)
             self._log_target_state("cleanup after restore", target_dir, method)
             try:
