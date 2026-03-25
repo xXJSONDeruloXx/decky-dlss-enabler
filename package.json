@@ -1,6 +1,6 @@
 {
   "name": "decky-dlss-enabler",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Decky plugin to manage DLSS Enabler inside per-game Proton prefixes",
   "type": "module",
   "scripts": {
