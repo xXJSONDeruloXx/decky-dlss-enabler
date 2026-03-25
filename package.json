@@ -53,6 +53,21 @@
       "sha256hash": "7357292a3ced57c194f60bd2cbfc8f3837604b2365af114a2a4bc61508e9d5c6",
       "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-dlss-enabler-4.4.0.2-dev/version.dll",
       "name": "version.dll"
+    },
+    {
+      "sha256hash": "6bf0d4f89611ff3cf0f15f767eb4c16c7044cba1e83d6272d996add42980b767",
+      "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-fsr4-int8-4.0.2b-opti-0.7.9/amd_fidelityfx_dx12.dll",
+      "name": "amd_fidelityfx_dx12.dll"
+    },
+    {
+      "sha256hash": "a6f0021a1c8f3f510d3ebf0289be00a3703d9d006dc5699614ff87c34f737297",
+      "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-fsr4-int8-4.0.2b-opti-0.7.9/amd_fidelityfx_framegeneration_dx12.dll",
+      "name": "amd_fidelityfx_framegeneration_dx12.dll"
+    },
+    {
+      "sha256hash": "2604c0b392072d715b400b2f89434274de31995a4b6e68ce38250ebbd3f6c5fc",
+      "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-fsr4-int8-4.0.2b-opti-0.7.9/amd_fidelityfx_upscaler_dx12.dll",
+      "name": "amd_fidelityfx_upscaler_dx12.dll"
     }
   ]
 }

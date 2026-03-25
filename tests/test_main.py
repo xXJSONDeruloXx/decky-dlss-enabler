@@ -26,17 +26,21 @@ plugin_main = load_plugin_module()
 
 
 class PluginUnderTest(plugin_main.Plugin):
-    def __init__(self, *, appid: str, name: str, install_root: Path, asset_path: Path):
+    def __init__(self, *, appid: str, name: str, install_root: Path, asset_path: Path, sidecar_dir: Path):
         self._appid = str(appid)
         self._name = name
         self._install_root = Path(install_root)
         self._asset_path = Path(asset_path)
+        self._sidecar_dir = Path(sidecar_dir)
 
     def _log(self, message: str) -> None:
         pass
 
     def _verify_bundled_asset(self) -> Path:
         return self._asset_path
+
+    def _bundled_sidecar_asset_path(self, asset_name: str) -> Path:
+        return self._sidecar_dir / asset_name
 
     def _game_record(self, appid: str) -> dict | None:
         if str(appid) != self._appid:
@@ -106,7 +110,26 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.asset_hash = hashlib.sha256(self.asset_bytes).hexdigest()
         self.legacy_asset_bytes = b"fake legacy dlss enabler dll"
         self.legacy_asset_hash = hashlib.sha256(self.legacy_asset_bytes).hexdigest()
-        self.plugin = PluginUnderTest(appid="123", name="Test Game", install_root=self.install_root, asset_path=self.asset_path)
+
+        self.sidecar_dir = self.root / "bin"
+        self.sidecar_dir.mkdir()
+        self.sidecar_loader_bytes = b"fake optiscaler loader dll"
+        self.sidecar_loader_hash = hashlib.sha256(self.sidecar_loader_bytes).hexdigest()
+        (self.sidecar_dir / "amd_fidelityfx_dx12.dll").write_bytes(self.sidecar_loader_bytes)
+        self.sidecar_framegen_bytes = b"fake optiscaler framegen dll"
+        self.sidecar_framegen_hash = hashlib.sha256(self.sidecar_framegen_bytes).hexdigest()
+        (self.sidecar_dir / "amd_fidelityfx_framegeneration_dx12.dll").write_bytes(self.sidecar_framegen_bytes)
+        self.sidecar_upscaler_bytes = b"fake fsr4 int8 upscaler dll"
+        self.sidecar_upscaler_hash = hashlib.sha256(self.sidecar_upscaler_bytes).hexdigest()
+        (self.sidecar_dir / "amd_fidelityfx_upscaler_dx12.dll").write_bytes(self.sidecar_upscaler_bytes)
+
+        self.plugin = PluginUnderTest(
+            appid="123",
+            name="Test Game",
+            install_root=self.install_root,
+            asset_path=self.asset_path,
+            sidecar_dir=self.sidecar_dir,
+        )
 
         self.fake_assets_by_version = {
             "4.3.1.0": {
@@ -120,7 +143,36 @@ class PatchUnpatchFlowTests(unittest.TestCase):
                 "release_tag": plugin_main.KNOWN_DLSS_ENABLER_ASSETS_BY_VERSION[plugin_main.DLSS_ENABLER_VERSION]["release_tag"],
             },
         }
+        self.fake_fsr4_bundle = {
+            "id": "fsr4-test-bundle",
+            "label": "FSR4 INT8 4.0.2b",
+            "fsr4_version": "4.0.2b",
+            "optiscaler_version": "0.7.9",
+            "release_tag": "bins-fsr4-test",
+            "assets": [
+                {
+                    "asset_name": "amd_fidelityfx_dx12.dll",
+                    "target_name": "amd_fidelityfx_dx12.dll",
+                    "sha256": self.sidecar_loader_hash,
+                    "kind": "ffx-loader",
+                },
+                {
+                    "asset_name": "amd_fidelityfx_framegeneration_dx12.dll",
+                    "target_name": "amd_fidelityfx_framegeneration_dx12.dll",
+                    "sha256": self.sidecar_framegen_hash,
+                    "kind": "ffx-framegen",
+                },
+                {
+                    "asset_name": "amd_fidelityfx_upscaler_dx12.dll",
+                    "target_name": "amd_fidelityfx_upscaler_dx12.dll",
+                    "sha256": self.sidecar_upscaler_hash,
+                    "kind": "fsr4-upscaler",
+                },
+            ],
+        }
+
         self.hash_patch = mock.patch.object(plugin_main, "BUNDLED_ASSET_SHA256", self.asset_hash)
+        self.fsr4_bundle_patch = mock.patch.object(plugin_main, "FSR4_INT8_BUNDLE", self.fake_fsr4_bundle)
         self.version_map_patch = mock.patch.dict(plugin_main.KNOWN_DLSS_ENABLER_ASSETS_BY_VERSION, self.fake_assets_by_version, clear=True)
         self.sha_map_patch = mock.patch.dict(
             plugin_main.KNOWN_DLSS_ENABLER_ASSETS_BY_SHA256,
@@ -133,6 +185,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
             clear=True,
         )
         self.hash_patch.start()
+        self.fsr4_bundle_patch.start()
         self.version_map_patch.start()
         self.sha_map_patch.start()
         self.token_map_patch.start()
@@ -141,6 +194,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.token_map_patch.stop()
         self.sha_map_patch.stop()
         self.version_map_patch.stop()
+        self.fsr4_bundle_patch.stop()
         self.hash_patch.stop()
         self.tempdir.cleanup()
 
@@ -289,6 +343,50 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.assertEqual(marker["marker_format"], "stable")
         self.assertEqual(marker["asset_version"], plugin_main.DLSS_ENABLER_VERSION)
         self.assertEqual(marker["original_launch_options"], "MANGOHUD=1 %command% -windowed")
+
+    def test_patch_game_with_fsr4_installs_sidecar_files_and_config(self):
+        result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True))
+
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(result["fsr4_enabled"])
+        self.assertEqual(result["fsr4_bundle_id"], self.fake_fsr4_bundle["id"])
+        self.assertEqual((self.target_dir / "amd_fidelityfx_dx12.dll").read_bytes(), self.sidecar_loader_bytes)
+        self.assertEqual((self.target_dir / "amd_fidelityfx_framegeneration_dx12.dll").read_bytes(), self.sidecar_framegen_bytes)
+        self.assertEqual((self.target_dir / "amd_fidelityfx_upscaler_dx12.dll").read_bytes(), self.sidecar_upscaler_bytes)
+        config_text = (self.target_dir / plugin_main.FSR4_CONFIG_FILENAME).read_text(encoding="utf-8")
+        self.assertIn("Fsr4Update=true", config_text)
+        self.assertIn("Dx12Upscaler=fsr31", config_text)
+
+        marker = self.read_marker_metadata("dxgi")
+        self.assertTrue(marker["fsr4_enabled"])
+        self.assertEqual(marker["fsr4_bundle_id"], self.fake_fsr4_bundle["id"])
+        self.assertEqual(len(marker["managed_files"]), 4)
+
+    def test_unpatch_restores_previous_fsr4_sidecar_files(self):
+        original_loader = self.target_dir / "amd_fidelityfx_dx12.dll"
+        original_loader.write_bytes(b"original loader")
+
+        patch_result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True))
+        self.assertEqual(patch_result["status"], "success")
+        self.assertEqual(original_loader.read_bytes(), self.sidecar_loader_bytes)
+
+        unpatch_result = self.run_async(self.plugin.unpatch_game("123"))
+        self.assertEqual(unpatch_result["status"], "success")
+        self.assertEqual(original_loader.read_bytes(), b"original loader")
+        self.assertIn("Restored original amd_fidelityfx_dx12.dll", unpatch_result["notes"])
+        self.assertFalse((self.target_dir / plugin_main.FSR4_CONFIG_FILENAME).exists())
+
+    def test_get_game_status_reports_fsr4_bundle_state(self):
+        patch_result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True))
+        self.assertEqual(patch_result["status"], "success")
+
+        status = self.run_async(self.plugin.get_game_status("123"))
+        self.assertEqual(status["status"], "success")
+        self.assertTrue(status["fsr4_enabled"])
+        self.assertEqual(status["fsr4_bundle_id"], self.fake_fsr4_bundle["id"])
+        self.assertTrue(status["fsr4_files_present"])
+        self.assertTrue(status["fsr4_files_complete"])
+        self.assertFalse(status["fsr4_reinstall_recommended"])
 
 
 if __name__ == "__main__":

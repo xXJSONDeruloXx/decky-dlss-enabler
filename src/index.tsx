@@ -43,6 +43,14 @@ type GameStatusResponse = {
   upgrade_available?: boolean;
   reinstall_recommended?: boolean;
   integrity_ok?: boolean | null;
+  fsr4_enabled?: boolean;
+  fsr4_bundle_id?: string | null;
+  fsr4_label?: string | null;
+  fsr4_optiscaler_version?: string | null;
+  fsr4_files_present?: boolean;
+  fsr4_files_complete?: boolean;
+  fsr4_integrity_ok?: boolean | null;
+  fsr4_reinstall_recommended?: boolean;
   paths?: {
     install_root?: string;
     target_dir?: string;
@@ -60,6 +68,9 @@ type PatchResponse = {
   marker_name?: string;
   bundled_asset_version?: string;
   bundled_asset_sha256?: string;
+  fsr4_enabled?: boolean;
+  fsr4_bundle_id?: string | null;
+  fsr4_label?: string | null;
   launch_options?: string;
   original_launch_options?: string;
   paths?: {
@@ -98,7 +109,7 @@ const METHOD_OPTIONS = [
 const listInstalledGames = callable<[], GameListResponse>("list_installed_games");
 const getGameStatus = callable<[appid: string], GameStatusResponse>("get_game_status");
 const patchGame = callable<
-  [appid: string, method: string, currentLaunchOptions: string],
+  [appid: string, method: string, currentLaunchOptions: string, enableFsr4: boolean],
   PatchResponse
 >("patch_game");
 const unpatchGame = callable<[appid: string], UnpatchResponse>("unpatch_game");
@@ -135,12 +146,14 @@ const setAppLaunchOptions = (appid: number, launchOptions: string) => {
 
 let lastSelectedAppId = "";
 let lastSelectedMethod = "dxgi";
+let lastSelectedFsr4 = "disabled";
 
 function Content() {
   const [games, setGames] = useState<GameInfo[]>([]);
   const [gamesLoading, setGamesLoading] = useState(true);
   const [selectedAppId, setSelectedAppId] = useState<string>(() => lastSelectedAppId);
   const [selectedMethod, setSelectedMethod] = useState<string>(() => lastSelectedMethod);
+  const [selectedFsr4, setSelectedFsr4] = useState<string>(() => lastSelectedFsr4);
   const [status, setStatus] = useState<GameStatusResponse | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [busyAction, setBusyAction] = useState<"patch" | "unpatch" | null>(null);
@@ -193,6 +206,11 @@ function Content() {
         lastSelectedMethod = result.method;
         setSelectedMethod(result.method);
       }
+      if (result.status === "success") {
+        const nextFsr4 = result.fsr4_enabled ? "enabled" : "disabled";
+        lastSelectedFsr4 = nextFsr4;
+        setSelectedFsr4(nextFsr4);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to load game status.";
       setStatus({ status: "error", message });
@@ -227,15 +245,17 @@ function Content() {
   const canUnpatch = Boolean(selectedGame && status?.status === "success" && status.marker_name && !busyAction);
 
   const patchButtonLabel = useMemo(() => {
+    const wantsFsr4 = selectedFsr4 === "enabled";
+    const suffix = wantsFsr4 ? " + FSR4 INT8 4.0.2b" : "";
     if (busyAction === "patch") return "Patching...";
     if (!selectedGame) return "Patch selected game";
     if (!status?.prefix_exists) return "Patch target not found";
-    if (status?.method && status.method !== selectedMethod) return `Switch to ${selectedMethodLabel}`;
-    if (status?.reinstall_recommended) return `Reinstall ${selectedMethodLabel}`;
+    if (status?.method && status.method !== selectedMethod) return `Switch to ${selectedMethodLabel}${suffix}`;
+    if (status?.reinstall_recommended || status?.fsr4_reinstall_recommended) return `Reinstall ${selectedMethodLabel}${suffix}`;
     if (status?.upgrade_available) return `Upgrade to ${status.bundled_asset_version ?? selectedMethodLabel}`;
-    if (status?.marker_name) return `Reinstall ${selectedMethodLabel}`;
-    return `Patch with ${selectedMethodLabel}`;
-  }, [busyAction, selectedGame, selectedMethodLabel, selectedMethod, status]);
+    if (status?.marker_name) return `Reinstall ${selectedMethodLabel}${suffix}`;
+    return `Patch with ${selectedMethodLabel}${suffix}`;
+  }, [busyAction, selectedFsr4, selectedGame, selectedMethodLabel, selectedMethod, status]);
 
   const handlePatch = useCallback(async () => {
     if (!selectedGame || !selectedAppId) return;
@@ -244,7 +264,7 @@ function Content() {
     setResultMessage("");
     try {
       const currentLaunchOptions = await getAppLaunchOptions(Number(selectedAppId));
-      const result = await patchGame(selectedAppId, selectedMethod, currentLaunchOptions);
+      const result = await patchGame(selectedAppId, selectedMethod, currentLaunchOptions, selectedFsr4 === "enabled");
       if (result.status !== "success") {
         throw new Error(result.message || "Patch failed.");
       }
@@ -263,7 +283,7 @@ function Content() {
     } finally {
       setBusyAction(null);
     }
-  }, [loadStatus, selectedAppId, selectedGame, selectedMethod, selectedMethodLabel]);
+  }, [loadStatus, selectedAppId, selectedFsr4, selectedGame, selectedMethod, selectedMethodLabel]);
 
   const handleUnpatch = useCallback(async () => {
     if (!selectedGame || !selectedAppId) return;
@@ -307,6 +327,23 @@ function Content() {
     return { text, color: "#3fb950" };
   }, [selectedGame, status]);
 
+  const fsr4Display = useMemo(() => {
+    if (!selectedGame || status?.status !== "success") {
+      return { text: "—", color: undefined as string | undefined };
+    }
+    if (!status.fsr4_enabled) {
+      return { text: "Disabled", color: undefined as string | undefined };
+    }
+    const text = status.fsr4_label || "FSR4 INT8 4.0.2b";
+    if (status.fsr4_reinstall_recommended) {
+      return { text, color: "#ff7b72" };
+    }
+    if (!status.fsr4_files_complete) {
+      return { text, color: "#ffd866" };
+    }
+    return { text, color: "#3fb950" };
+  }, [selectedGame, status]);
+
   const statusMessage = useMemo(() => {
     if (!selectedGame) return "Choose a game to manage its patch state.";
     if (statusLoading) return "Loading patch status...";
@@ -314,8 +351,11 @@ function Content() {
     if (status.status === "error") return `Error: ${status.message || "Failed to load status."}`;
     if (!status.prefix_exists) return status.message || "Patch target not found.";
     if (!status.patched) return status.message || "This game is not currently patched.";
-    if (status.reinstall_recommended || status.upgrade_available) {
+    if (status.reinstall_recommended || status.upgrade_available || status.fsr4_reinstall_recommended) {
       return status.message || "An update is available.";
+    }
+    if (status.fsr4_enabled && !status.fsr4_files_complete) {
+      return "FSR4 sidecar files are expected but incomplete. Reinstall recommended.";
     }
     return "";
   }, [selectedGame, status, statusLoading]);
@@ -386,6 +426,22 @@ function Content() {
         </Field>
       </PanelSectionRow>
 
+      <PanelSectionRow>
+        <Field label="FSR4 sidecar">
+          {fsr4Display.color ? (
+            <span style={{ color: fsr4Display.color, fontWeight: 600 }}>{fsr4Display.text}</span>
+          ) : fsr4Display.text}
+        </Field>
+      </PanelSectionRow>
+
+      <PanelSectionRow>
+        <Field label="OptiScaler base">
+          {selectedGame && status?.status === "success"
+            ? (status.fsr4_enabled ? (status.fsr4_optiscaler_version || "0.7.9") : "—")
+            : "—"}
+        </Field>
+      </PanelSectionRow>
+
       {statusMessage ? (
         <PanelSectionRow>
           <Field label="Status">{statusMessage}</Field>
@@ -413,6 +469,26 @@ function Content() {
         <Field label="Selected DLL name" description="The bundled DLSS Enabler proxy will be copied into the chosen game executable directory using this filename.">
           {selectedMethodLabel}
         </Field>
+      </PanelSectionRow>
+
+      <PanelSectionRow>
+        <DropdownItem
+          label="FSR4 INT8 sidecar"
+          description="Experimental: installs OptiScaler 0.7.9 FFX sidecar files plus FSR4 INT8 4.0.2b."
+          menuLabel="FSR4 INT8 sidecar"
+          strDefaultLabel="Choose sidecar mode"
+          selectedOption={selectedFsr4}
+          rgOptions={[
+            { data: "disabled", label: "Disabled" },
+            { data: "enabled", label: "Enabled (4.0.2b)" },
+          ]}
+          onChange={(option) => {
+            const nextValue = String(option.data);
+            lastSelectedFsr4 = nextValue;
+            setSelectedFsr4(nextValue);
+          }}
+          disabled={!selectedGame || busyAction !== null}
+        />
       </PanelSectionRow>
 
       <PanelSectionRow>

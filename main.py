@@ -28,6 +28,35 @@ KNOWN_DLSS_ENABLER_ASSETS_BY_VERSION = {
 }
 DLSS_ENABLER_VERSION = CURRENT_DLSS_ENABLER_VERSION
 BUNDLED_ASSET_SHA256 = KNOWN_DLSS_ENABLER_ASSETS_BY_VERSION[DLSS_ENABLER_VERSION]["sha256"]
+
+FSR4_INT8_BUNDLE = {
+    "id": "fsr4-int8-4.0.2b-opti-0.7.9",
+    "label": "FSR4 INT8 4.0.2b",
+    "fsr4_version": "4.0.2b",
+    "optiscaler_version": "0.7.9",
+    "release_tag": "bins-fsr4-int8-4.0.2b-opti-0.7.9",
+    "assets": [
+        {
+            "asset_name": "amd_fidelityfx_dx12.dll",
+            "target_name": "amd_fidelityfx_dx12.dll",
+            "sha256": "6bf0d4f89611ff3cf0f15f767eb4c16c7044cba1e83d6272d996add42980b767",
+            "kind": "ffx-loader",
+        },
+        {
+            "asset_name": "amd_fidelityfx_framegeneration_dx12.dll",
+            "target_name": "amd_fidelityfx_framegeneration_dx12.dll",
+            "sha256": "a6f0021a1c8f3f510d3ebf0289be00a3703d9d006dc5699614ff87c34f737297",
+            "kind": "ffx-framegen",
+        },
+        {
+            "asset_name": "amd_fidelityfx_upscaler_dx12.dll",
+            "target_name": "amd_fidelityfx_upscaler_dx12.dll",
+            "sha256": "2604c0b392072d715b400b2f89434274de31995a4b6e68ce38250ebbd3f6c5fc",
+            "kind": "fsr4-upscaler",
+        },
+    ],
+}
+FSR4_CONFIG_FILENAME = "OptiScaler.ini"
 MARKER_PREFIX = "DLSS_ENABLER_"
 MARKER_SUFFIX = "_DLL"
 BACKUP_SUFFIX = ".backup"
@@ -108,6 +137,25 @@ class Plugin:
     def _bundled_asset_path(self) -> Path:
         return self._plugin_bin_dir() / BUNDLED_ASSET_NAME
 
+    def _bundled_sidecar_asset_path(self, asset_name: str) -> Path:
+        return self._plugin_bin_dir() / asset_name
+
+    def _fsr4_config_contents(self) -> str:
+        return (
+            "; Managed by Decky DLSS Enabler\n"
+            "; Experimental FSR4 INT8 sidecar support\n\n"
+            "[FSR]\n"
+            "Fsr4Update=true\n"
+            "FsrAgilitySDKUpgrade=auto\n\n"
+            "[Upscalers]\n"
+            "Dx12Upscaler=fsr31\n"
+        )
+
+    def _bytes_sha256(self, payload: bytes) -> str:
+        digest = hashlib.sha256()
+        digest.update(payload)
+        return digest.hexdigest()
+
     def _file_sha256(self, path: Path) -> str:
         digest = hashlib.sha256()
         with open(path, "rb") as file:
@@ -135,6 +183,23 @@ class Plugin:
                 f"Bundled asset hash mismatch for {asset_path.name}: expected {BUNDLED_ASSET_SHA256}, got {asset_hash}"
             )
         return asset_path
+
+    def _verify_fsr4_bundle_assets(self) -> list[dict]:
+        verified_assets: list[dict] = []
+        for asset in FSR4_INT8_BUNDLE["assets"]:
+            asset_path = self._bundled_sidecar_asset_path(asset["asset_name"])
+            if not asset_path.exists():
+                raise FileNotFoundError(f"Bundled FSR4 sidecar asset missing: {asset_path}")
+
+            asset_hash = self._file_sha256(asset_path)
+            self._log(f"verify fsr4 asset: path={asset_path} sha256={asset_hash}")
+            if asset_hash.lower() != asset["sha256"].lower():
+                raise RuntimeError(
+                    f"Bundled FSR4 sidecar hash mismatch for {asset_path.name}: expected {asset['sha256']}, got {asset_hash}"
+                )
+
+            verified_assets.append({**asset, "path": asset_path})
+        return verified_assets
 
     def _read_json_file(self, path: Path) -> dict:
         if not path.exists():
@@ -428,6 +493,9 @@ class Plugin:
             "asset_version_token": parsed_name.get("asset_version_token"),
             "original_launch_options": "",
             "backup_created": False,
+            "fsr4_enabled": False,
+            "fsr4_bundle_id": None,
+            "managed_files": [],
         }
         try:
             parsed = self._read_json_file(marker_path)
@@ -464,6 +532,9 @@ class Plugin:
         target_exe: Path | None,
         original_launch_options: str,
         backup_created: bool,
+        fsr4_enabled: bool = False,
+        fsr4_bundle_id: str | None = None,
+        managed_files: list[dict] | None = None,
     ) -> None:
         payload = {
             "appid": str(appid),
@@ -479,6 +550,9 @@ class Plugin:
             "target_exe": str(target_exe) if target_exe else "",
             "original_launch_options": original_launch_options,
             "backup_created": bool(backup_created),
+            "fsr4_enabled": bool(fsr4_enabled),
+            "fsr4_bundle_id": fsr4_bundle_id if fsr4_enabled else None,
+            "managed_files": managed_files or [],
             "patched_at": datetime.now(timezone.utc).isoformat(),
         }
         self._write_json_file(marker_path, payload)
@@ -566,6 +640,99 @@ class Plugin:
             "integrity_ok": integrity_ok,
         }
 
+    def _fsr4_bundle_state(self, target_dir: Path, metadata: dict) -> dict:
+        expected_bundle_id = metadata.get("fsr4_bundle_id")
+        expected_files = metadata.get("managed_files") or []
+        installed_files: list[dict] = []
+        integrity_values: list[bool] = []
+
+        for managed_file in expected_files:
+            target_path_value = managed_file.get("target_path") or managed_file.get("path")
+            if not target_path_value:
+                continue
+            target_path = Path(str(target_path_value))
+            expected_sha256 = str(managed_file.get("sha256") or "") or None
+            actual_sha256 = self._safe_sha256(target_path)
+            exists = target_path.exists() or target_path.is_symlink()
+            integrity_ok = None
+            if actual_sha256 and expected_sha256:
+                integrity_ok = actual_sha256.lower() == expected_sha256.lower()
+                integrity_values.append(integrity_ok)
+            installed_files.append(
+                {
+                    "name": managed_file.get("target_name") or target_path.name,
+                    "target_path": str(target_path),
+                    "expected_sha256": expected_sha256,
+                    "actual_sha256": actual_sha256,
+                    "exists": exists,
+                    "integrity_ok": integrity_ok,
+                }
+            )
+
+        fsr4_enabled = bool(metadata.get("fsr4_enabled") or expected_bundle_id)
+        reinstall_recommended = any(value is False for value in integrity_values)
+        files_present = any(entry["exists"] for entry in installed_files)
+        files_complete = bool(installed_files) and all(entry["exists"] for entry in installed_files)
+
+        return {
+            "fsr4_enabled": fsr4_enabled,
+            "fsr4_bundle_id": expected_bundle_id,
+            "fsr4_label": FSR4_INT8_BUNDLE["label"] if fsr4_enabled else None,
+            "fsr4_optiscaler_version": FSR4_INT8_BUNDLE["optiscaler_version"] if fsr4_enabled else None,
+            "fsr4_files_present": files_present,
+            "fsr4_files_complete": files_complete,
+            "fsr4_integrity_ok": None if not installed_files else all(value is not False for value in integrity_values),
+            "fsr4_reinstall_recommended": reinstall_recommended,
+            "fsr4_managed_files": installed_files,
+        }
+
+    def _install_fsr4_bundle(self, target_dir: Path) -> list[dict]:
+        verified_assets = self._verify_fsr4_bundle_assets()
+        managed_files: list[dict] = []
+
+        for asset in verified_assets:
+            target_path = target_dir / asset["target_name"]
+            backup_created = self._prepare_managed_file(target_path, asset["sha256"])
+            shutil.copy2(asset["path"], target_path)
+            copied_hash = self._file_sha256(target_path)
+            if copied_hash.lower() != asset["sha256"].lower():
+                raise RuntimeError(
+                    f"Copied FSR4 sidecar hash mismatch for {target_path.name}: expected {asset['sha256']}, got {copied_hash}"
+                )
+            managed_files.append(
+                {
+                    "kind": asset["kind"],
+                    "asset_name": asset["asset_name"],
+                    "target_name": asset["target_name"],
+                    "target_path": str(target_path),
+                    "sha256": asset["sha256"],
+                    "backup_created": backup_created,
+                }
+            )
+
+        config_path = target_dir / FSR4_CONFIG_FILENAME
+        config_bytes = self._fsr4_config_contents().encode("utf-8")
+        config_sha256 = self._bytes_sha256(config_bytes)
+        config_backup_created = self._prepare_managed_file(config_path, config_sha256)
+        config_path.write_text(self._fsr4_config_contents(), encoding="utf-8")
+        written_config_sha256 = self._file_sha256(config_path)
+        if written_config_sha256.lower() != config_sha256.lower():
+            raise RuntimeError(
+                f"Copied FSR4 config hash mismatch for {config_path.name}: expected {config_sha256}, got {written_config_sha256}"
+            )
+        managed_files.append(
+            {
+                "kind": "optiscaler-config",
+                "asset_name": FSR4_CONFIG_FILENAME,
+                "target_name": FSR4_CONFIG_FILENAME,
+                "target_path": str(config_path),
+                "sha256": config_sha256,
+                "backup_created": config_backup_created,
+            }
+        )
+
+        return managed_files
+
     def _unique_stash_path(self, path: Path, label: str) -> Path:
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
         base = path.with_name(f"{path.name}.{label}.{timestamp}")
@@ -584,35 +751,67 @@ class Plugin:
         else:
             path.unlink()
 
-    def _restore_method_in_dir(self, target_dir: Path, method: str) -> list[str]:
+    def _is_managed_file_sha(self, path: Path, expected_sha256: str | None) -> bool:
+        if not expected_sha256:
+            return False
+        try:
+            return path.is_file() and self._file_sha256(path).lower() == expected_sha256.lower()
+        except Exception:
+            return False
+
+    def _prepare_managed_file(self, target_path: Path, expected_sha256: str | None) -> bool:
+        backup_path = target_path.with_name(f"{target_path.name}{BACKUP_SUFFIX}")
+        backup_created = False
+
+        if backup_path.exists() or backup_path.is_symlink():
+            stashed_backup = self._unique_stash_path(backup_path, "preexisting-backup")
+            backup_path.rename(stashed_backup)
+            self._log(f"prepare managed file stashed preexisting backup to {stashed_backup}")
+
+        if target_path.exists() or target_path.is_symlink():
+            if self._is_managed_file_sha(target_path, expected_sha256):
+                self._remove_path(target_path)
+                self._log(f"prepare managed file removed existing managed file {target_path}")
+            else:
+                target_path.rename(backup_path)
+                backup_created = True
+                self._log(f"prepare managed file moved existing file to backup {backup_path}")
+
+        return backup_created
+
+    def _restore_managed_file(self, target_path: Path, expected_sha256: str | None) -> list[str]:
         notes: list[str] = []
-        proxy_filename = f"{self._normalize_method(method)}.dll"
-        proxy_path = target_dir / proxy_filename
-        backup_path = target_dir / f"{proxy_filename}{BACKUP_SUFFIX}"
+        filename = target_path.name
+        backup_path = target_path.with_name(f"{filename}{BACKUP_SUFFIX}")
 
         backup_exists = backup_path.exists() or backup_path.is_symlink()
-        proxy_exists = proxy_path.exists() or proxy_path.is_symlink()
+        file_exists = target_path.exists() or target_path.is_symlink()
 
         if backup_exists:
-            if proxy_exists:
-                if self._is_bundled_proxy_file(proxy_path):
-                    self._remove_path(proxy_path)
+            if file_exists:
+                if self._is_managed_file_sha(target_path, expected_sha256):
+                    self._remove_path(target_path)
                 else:
-                    stashed_path = self._unique_stash_path(proxy_path, "unexpected")
-                    proxy_path.rename(stashed_path)
-                    notes.append(f"Stashed unexpected {proxy_filename} to {stashed_path.name}")
-            backup_path.rename(proxy_path)
-            notes.append(f"Restored original {proxy_filename}")
-        elif proxy_exists:
-            if self._is_bundled_proxy_file(proxy_path):
-                self._remove_path(proxy_path)
-                notes.append(f"Removed managed {proxy_filename}")
+                    stashed_path = self._unique_stash_path(target_path, "unexpected")
+                    target_path.rename(stashed_path)
+                    notes.append(f"Stashed unexpected {filename} to {stashed_path.name}")
+            backup_path.rename(target_path)
+            notes.append(f"Restored original {filename}")
+        elif file_exists:
+            if self._is_managed_file_sha(target_path, expected_sha256):
+                self._remove_path(target_path)
+                notes.append(f"Removed managed {filename}")
             else:
-                stashed_path = self._unique_stash_path(proxy_path, "unexpected")
-                proxy_path.rename(stashed_path)
-                notes.append(f"Stashed unexpected {proxy_filename} to {stashed_path.name}")
+                stashed_path = self._unique_stash_path(target_path, "unexpected")
+                target_path.rename(stashed_path)
+                notes.append(f"Stashed unexpected {filename} to {stashed_path.name}")
 
         return notes
+
+    def _restore_method_in_dir(self, target_dir: Path, method: str) -> list[str]:
+        proxy_filename = f"{self._normalize_method(method)}.dll"
+        proxy_path = target_dir / proxy_filename
+        return self._restore_managed_file(proxy_path, BUNDLED_ASSET_SHA256)
 
     def _cleanup_install_root(self, install_root: Path) -> dict:
         marker_paths = self._find_markers_under_install_root(install_root)
@@ -632,6 +831,14 @@ class Plugin:
             target_dir = marker_path.parent
             self._log(f"cleanup marker metadata: {json.dumps(metadata, sort_keys=True)}")
             self._log_target_state("cleanup before restore", target_dir, method)
+
+            for managed_file in metadata.get("managed_files") or []:
+                target_path_value = managed_file.get("target_path") or managed_file.get("path")
+                expected_sha256 = managed_file.get("sha256")
+                if not target_path_value:
+                    continue
+                notes.extend(self._restore_managed_file(Path(str(target_path_value)), expected_sha256))
+
             notes.extend(self._restore_method_in_dir(target_dir, method))
             cleaned_methods.append(method)
             self._log_target_state("cleanup after restore", target_dir, method)
@@ -653,35 +860,14 @@ class Plugin:
         method = self._normalize_method(method)
         proxy_filename = f"{method}.dll"
         proxy_path = target_dir / proxy_filename
-        backup_path = target_dir / f"{proxy_filename}{BACKUP_SUFFIX}"
-        backup_created = False
-
-        marker_for_method = target_dir / self._marker_filename(method)
-        same_method_already_managed = marker_for_method.exists()
 
         self._log_target_state("prepare before", target_dir, method)
         self._log(
-            f"prepare target proxy: target_dir={target_dir} method={method} same_method_already_managed={same_method_already_managed} "
-            f"proxy_is_bundled={self._is_bundled_proxy_file(proxy_path)} backup_exists={backup_path.exists() or backup_path.is_symlink()}"
+            f"prepare target proxy: target_dir={target_dir} method={method} "
+            f"proxy_is_bundled={self._is_bundled_proxy_file(proxy_path)}"
         )
 
-        if backup_path.exists() or backup_path.is_symlink():
-            if not same_method_already_managed:
-                stashed_backup = self._unique_stash_path(backup_path, "preexisting-backup")
-                backup_path.rename(stashed_backup)
-                self._log(f"prepare stashed preexisting backup to {stashed_backup}")
-
-        if proxy_path.exists() or proxy_path.is_symlink():
-            if same_method_already_managed and self._is_bundled_proxy_file(proxy_path):
-                self._remove_path(proxy_path)
-                self._log(f"prepare removed existing managed proxy {proxy_path}")
-            elif self._is_bundled_proxy_file(proxy_path):
-                self._remove_path(proxy_path)
-                self._log(f"prepare removed bundled proxy without same-method marker {proxy_path}")
-            else:
-                proxy_path.rename(backup_path)
-                backup_created = True
-                self._log(f"prepare moved existing proxy to backup {backup_path}")
+        backup_created = self._prepare_managed_file(proxy_path, BUNDLED_ASSET_SHA256)
 
         self._log_target_state("prepare after", target_dir, method)
         return backup_created
@@ -775,6 +961,7 @@ class Plugin:
                     "patched": False,
                     "method": None,
                     "proxy_filename": None,
+                    "fsr4_enabled": False,
                     "message": "This game is not currently patched.",
                     "paths": {
                         "install_root": str(install_root),
@@ -791,8 +978,10 @@ class Plugin:
             proxy_path = target_dir / proxy_filename
             patched = proxy_path.exists() or proxy_path.is_symlink()
             asset_state = self._installed_asset_state(proxy_path, metadata)
+            fsr4_state = self._fsr4_bundle_state(target_dir, metadata)
             self._log(f"get_game_status marker metadata: {json.dumps(metadata, sort_keys=True)}")
             self._log(f"get_game_status asset state: {json.dumps(asset_state, sort_keys=True)}")
+            self._log(f"get_game_status fsr4 state: {json.dumps(fsr4_state, sort_keys=True)}")
             self._log_target_state("get_game_status", target_dir, method)
 
             if not patched:
@@ -833,6 +1022,14 @@ class Plugin:
                 "upgrade_available": asset_state["upgrade_available"],
                 "reinstall_recommended": asset_state["reinstall_recommended"],
                 "integrity_ok": asset_state["integrity_ok"],
+                "fsr4_enabled": fsr4_state["fsr4_enabled"],
+                "fsr4_bundle_id": fsr4_state["fsr4_bundle_id"],
+                "fsr4_label": fsr4_state["fsr4_label"],
+                "fsr4_optiscaler_version": fsr4_state["fsr4_optiscaler_version"],
+                "fsr4_files_present": fsr4_state["fsr4_files_present"],
+                "fsr4_files_complete": fsr4_state["fsr4_files_complete"],
+                "fsr4_integrity_ok": fsr4_state["fsr4_integrity_ok"],
+                "fsr4_reinstall_recommended": fsr4_state["fsr4_reinstall_recommended"],
                 "paths": {
                     "install_root": str(install_root),
                     "target_dir": str(target_dir),
@@ -843,11 +1040,11 @@ class Plugin:
             self._log(f"get_game_status failed for {appid}: {exc}")
             return {"status": "error", "message": str(exc)}
 
-    async def patch_game(self, appid: str, method: str, current_launch_options: str = "") -> dict:
+    async def patch_game(self, appid: str, method: str, current_launch_options: str = "", enable_fsr4: bool = False) -> dict:
         try:
             normalized_method = self._normalize_method(method)
             self._log(
-                f"patch_game start: appid={appid} method={normalized_method} original_launch_options={json.dumps(current_launch_options)}"
+                f"patch_game start: appid={appid} method={normalized_method} enable_fsr4={enable_fsr4} original_launch_options={json.dumps(current_launch_options)}"
             )
             asset_path = self._verify_bundled_asset()
             game_info = self._game_record(str(appid))
@@ -889,6 +1086,11 @@ class Plugin:
                     f"Copied proxy hash mismatch for {target_proxy_path.name}: expected {BUNDLED_ASSET_SHA256}, got {copied_hash}"
                 )
 
+            managed_files: list[dict] = []
+            if enable_fsr4:
+                managed_files = self._install_fsr4_bundle(target_dir)
+                self._log(f"patch installed fsr4 bundle: {json.dumps(managed_files, sort_keys=True)}")
+
             marker_path = target_dir / self._marker_filename(normalized_method)
             self._write_marker_metadata(
                 marker_path,
@@ -899,6 +1101,9 @@ class Plugin:
                 target_exe=target_exe,
                 original_launch_options=original_launch_options,
                 backup_created=backup_created,
+                fsr4_enabled=enable_fsr4,
+                fsr4_bundle_id=FSR4_INT8_BUNDLE["id"] if enable_fsr4 else None,
+                managed_files=managed_files,
             )
             self._log(f"patch wrote marker: {json.dumps(self._read_marker_metadata(marker_path), sort_keys=True)}")
 
@@ -914,9 +1119,16 @@ class Plugin:
                 "marker_name": marker_path.name,
                 "bundled_asset_version": DLSS_ENABLER_VERSION,
                 "bundled_asset_sha256": BUNDLED_ASSET_SHA256,
+                "fsr4_enabled": enable_fsr4,
+                "fsr4_bundle_id": FSR4_INT8_BUNDLE["id"] if enable_fsr4 else None,
+                "fsr4_label": FSR4_INT8_BUNDLE["label"] if enable_fsr4 else None,
                 "launch_options": managed_launch_options,
                 "original_launch_options": original_launch_options,
-                "message": f"Patched {game_info['name']} using {normalized_method}.dll in the game directory.",
+                "message": (
+                    f"Patched {game_info['name']} using {normalized_method}.dll with {FSR4_INT8_BUNDLE['label']} sidecar files."
+                    if enable_fsr4
+                    else f"Patched {game_info['name']} using {normalized_method}.dll in the game directory."
+                ),
                 "paths": {
                     "install_root": str(install_root),
                     "target_dir": str(target_dir),
