@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -171,15 +172,56 @@ class Plugin:
 
         return normalized
 
+    def _normalize_game_name(self, name: str | None) -> str:
+        normalized = unicodedata.normalize("NFKD", str(name or ""))
+        normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+        normalized = normalized.lower().replace("&", " and ")
+        normalized = re.sub(r"[^a-z0-9]+", " ", normalized)
+        return " ".join(normalized.split())
+
+    def _entry_game_name_candidates(self, entry_key: str, entry: dict) -> list[str]:
+        candidates: list[str] = []
+        for value in [entry.get("steam_name"), entry.get("wiki_slug")]:
+            if value:
+                candidates.append(str(value).replace("-", " "))
+
+        for alias in entry.get("aliases") or []:
+            if alias:
+                candidates.append(str(alias))
+
+        if entry_key and not str(entry_key).isdigit():
+            candidates.append(str(entry_key).replace("-", " "))
+
+        normalized_candidates: list[str] = []
+        seen = set()
+        for candidate in candidates:
+            normalized = self._normalize_game_name(candidate)
+            if normalized and normalized not in seen:
+                normalized_candidates.append(normalized)
+                seen.add(normalized)
+        return normalized_candidates
+
     def _game_quirks(self, appid: str, game_name: str | None = None) -> dict | None:
-        del game_name
         quirks_db = self._load_quirks_db()
         games = quirks_db.get("games") if isinstance(quirks_db, dict) else None
         if not isinstance(games, dict):
             return None
 
         entry = games.get(str(appid))
-        return entry if isinstance(entry, dict) else None
+        if isinstance(entry, dict):
+            return entry
+
+        normalized_game_name = self._normalize_game_name(game_name)
+        if not normalized_game_name:
+            return None
+
+        for entry_key, entry_value in games.items():
+            if not isinstance(entry_value, dict):
+                continue
+            if normalized_game_name in self._entry_game_name_candidates(str(entry_key), entry_value):
+                return entry_value
+
+        return None
 
     def _game_quirks_payload(self, appid: str, game_name: str | None = None) -> dict:
         entry = self._game_quirks(appid, game_name)
