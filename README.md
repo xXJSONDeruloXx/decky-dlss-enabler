@@ -8,10 +8,6 @@
 
 Decky plugin for per-game DLSS Enabler management on Steam Deck.
 
-<img width="613" height="800" alt="image" src="https://github.com/user-attachments/assets/ef81d0af-1877-4608-acec-d6425f4b88b9" />
-
-
-
 ## Function
 
 For a selected Steam game, the plugin:
