@@ -508,7 +508,8 @@
     "Dead-Island-2": {
       "notes": [
         "Nvidia users need to paste nvngx_dlss.dll (DLSS DLL) in the game folder; otherwise, game will crash when auto-switching to DLSS.",
-        "Requires a minimum of 1.01 upscale ratio, DLAA/Native AA 1.0 scaling disables upscaling. Try 1.1 first, then add the 0 for 1.01."
+        "Requires a minimum of 1.01 upscale ratio, DLAA/Native AA 1.0 scaling disables upscaling. Try 1.1 first, then add the 0 for 1.01.",
+        "OptiFG users may want HUDFix=true."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -623,7 +624,8 @@
         "OptiScaler wiki lists multiple compatible DLL names: dxgi.dll, winmm.dll.",
         "XeSS inputs are stuck at 1.0 (native) ratio, override doesn't work.",
         "XeSS inputs only work for XeSS or FSR4 output.",
-        "DLSS input, FSR4 output - flickering on Balanced preset."
+        "DLSS input, FSR4 output - flickering on Balanced preset.",
+        "The wiki notes that the native XeFG path only works with XeSS inputs and Dxgi=false."
       ],
       "recommended_method": null,
       "recommended_methods": [
@@ -635,6 +637,28 @@
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Directorate-Novitiate",
       "steam_name": "Directorate Novitiate",
       "wiki_slug": "Directorate-Novitiate"
+    },
+    "Dishonored-2": {
+      "notes": [
+        "Luma-based setup page with multiple install methods; no single DLL filename is recommended in the wiki table.",
+        "On AMD/Intel, the wiki recommends Dxgi=false together with DontUseNTShared=true.",
+        "Some install methods may also require DontCreateD3D12DeviceForLuma=true, but that is method-specific and not auto-applied here.",
+        "Method 1 in the wiki also recommends LoadReshade=true, but only for the ReShade-through-OptiScaler setup."
+      ],
+      "recommended_method": null,
+      "recommended_methods": [],
+      "recommended_optiscaler_ini_overrides": {
+        "Dx11withDx12": {
+          "DontUseNTShared": "true"
+        },
+        "Spoofing": {
+          "Dxgi": "false"
+        }
+      },
+      "source": "OptiScaler wiki",
+      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Dishonored-2",
+      "steam_name": "Dishonored 2",
+      "wiki_slug": "Dishonored-2"
     },
     "Doom-The-Dark-Ages": {
       "notes": [
@@ -735,7 +759,9 @@
       "wiki_slug": "Dying-Light-The-Beast"
     },
     "Echo-Point-Nova": {
-      "notes": [],
+      "notes": [
+        "The wiki reports that Dx12Upscaler=fsr31 gave the best performance."
+      ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
@@ -899,7 +925,8 @@
       "notes": [
         "Although the game doesn\u2019t natively support FSR, FSR 3.X works fine (without any additional toggles needed) via DLSS inputs. (I haven't tested it with XeSS inputs, but I'm certain that it should work as well)",
         "If you want to use Anti-Lag 2/LatencyFlex injection with OptiFG, then include both fakenvapi, and nvapi64.dll files within the Win64 folder (C:\\SteamLibrary\\steamapps\\common\\Flintlock The Siege of Dawn\\Saltpeter\\Binaries\\Win64). Once the game recognizes the spoofed Nvidia GPU, you'll have access to the Nvidia Reflex Low Latency option",
-        "If you prefer to use Nukems' DLSSG-to-FSR3 mod over OptiFG, please refer to the bullet point above by also including the dlssg_to_fsr3_amd_is_better.dll file within the same folder. Once you set FGType=nukems in OptiScaler.ini and it's successfully recognized, the Frame Generation option will become available. Also, Reflex Low Latency will automatically be forced on, when using Frame Gen as well"
+        "If you prefer to use Nukems' DLSSG-to-FSR3 mod over OptiFG, please refer to the bullet point above by also including the dlssg_to_fsr3_amd_is_better.dll file within the same folder. Once you set FGType=nukems in OptiScaler.ini and it's successfully recognized, the Frame Generation option will become available. Also, Reflex Low Latency will automatically be forced on, when using Frame Gen as well",
+        "The wiki notes FGType=nukems when using Nukem's mod, which already matches our current managed FSR4 sidecar default."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -912,7 +939,9 @@
       "wiki_slug": "Flintlock-The-Siege-of-Dawn"
     },
     "Forgive-me-Father-2": {
-      "notes": [],
+      "notes": [
+        "The wiki notes FGType=Nukems when using Nukem's mod, which already matches our current managed FSR4 sidecar default."
+      ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
@@ -1051,6 +1080,21 @@
       "steam_name": "God of War 2018",
       "wiki_slug": "God-of-War-2018"
     },
+    "God-of-War-Ragnarok": {
+      "notes": [
+        "The wiki does not recommend a single DLL filename in the table.",
+        "For OptiScaler.ini, the wiki says FGType=nofg unless you are explicitly using Nukem's mod, in which case FGType=nukems is appropriate.",
+        "That guidance is conditional, so it is not auto-applied here.",
+        "The wiki notes FGType=nukems when using Nukem's mod; otherwise FGType=nofg."
+      ],
+      "recommended_method": null,
+      "recommended_methods": [],
+      "recommended_optiscaler_ini_overrides": {},
+      "source": "OptiScaler wiki",
+      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/God-of-War-Ragnarok",
+      "steam_name": "God of War Ragnarok",
+      "wiki_slug": "God-of-War-Ragnarok"
+    },
     "Gotham-Knights": {
       "notes": [
         "FSR2 inputs don't work - use XeSS or DLSS instead"
@@ -1185,7 +1229,9 @@
       "wiki_slug": "Hell-is-Us"
     },
     "Hellblade-Senuas-Sacrifice": {
-      "notes": [],
+      "notes": [
+        "The wiki's OptiFG path uses Enabled=true, HUDFix=true, and AllowAsync=true, with FramerateLimit around 80.0."
+      ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
@@ -1410,7 +1456,8 @@
     },
     "Marvels-Spider\u2010Man-Miles-Morales": {
       "notes": [
-        "For AMD/Intel cards, using Ray Tracing while Spoofing crashes the game at startup Either avoid using RT when spoofing or disable spoofing by setting Dxgi=false in OptiScaler.ini and check FG-Settings above. _Since 0.9, Opti is now automatically disabling Dxgi spoofing_"
+        "For AMD/Intel cards, using Ray Tracing while Spoofing crashes the game at startup Either avoid using RT when spoofing or disable spoofing by setting Dxgi=false in OptiScaler.ini and check FG-Settings above. _Since 0.9, Opti is now automatically disabling Dxgi spoofing_",
+        "On AMD/Intel, ray tracing with spoofing can crash at startup; the wiki suggests Dxgi=false if you want to avoid spoofing."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -1424,7 +1471,8 @@
     },
     "Marvels-Spider\u2010Man-Remastered": {
       "notes": [
-        "For AMD/Intel cards, using Ray Tracing while Spoofing crashes the game at startup Either avoid using RT when spoofing or disable spoofing by setting Dxgi=false in OptiScaler.ini and check FG-Settings above. _Since 0.9, Opti is now automatically disabling Dxgi spoofing_"
+        "For AMD/Intel cards, using Ray Tracing while Spoofing crashes the game at startup Either avoid using RT when spoofing or disable spoofing by setting Dxgi=false in OptiScaler.ini and check FG-Settings above. _Since 0.9, Opti is now automatically disabling Dxgi spoofing_",
+        "On AMD/Intel, ray tracing with spoofing can crash at startup; the wiki suggests Dxgi=false if you want to avoid spoofing."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -1442,7 +1490,8 @@
         "As of Ver. 1.1.2, the game still doesn't feature DLSS Frame Generation, FSR 3 Frame Generation and Nvidia Reflex. However, the game contains those necessary plugins; it's just not visible in the Graphics Settings to the end user. To enable them, go to C:\\Users\\[User Name]\\App Data\\Local\\MGSDelta\\Saved\\Config\\Windows and click on Engine.ini. Scroll all the way to the bottom and add the following lines below (the ones starting with [SystemSettings]).",
         "After adding those lines, add Nukem's dlss-to-fsr3-amd-is-better.dll and FakeMichau's fakenvapi into the root game folder and you'll see both DLSSG and Anti-Lag 2/XeLL running. DLSS Frame Gen On, Reflex On, and Reflex On (not On Boost) Mode Selected: [SystemSettings] r.Streamline.DLSSG.Enable=1 t.Streamline.Reflex.Enable=1 t.Streamline.Reflex.Mode=1 FSR 3 Frame Gen: [SystemSettings] r.FidelityFX.FI.Enabled=1",
         "DLSS presets are using different scaling ratios (Quality 75%, Balanced 67%) - can be fixed with MGSDeltaFix",
-        "After extensively playing, it appears that using Nukem's DLSSG -> FSR-FG via Nukem is causing Improper Frame Pacing for every other third frame. Reverting to OptiFG alleviated this problem for my rig. (Your mileage may vary, considering that some people aren't experiencing this issue.)"
+        "After extensively playing, it appears that using Nukem's DLSSG -> FSR-FG via Nukem is causing Improper Frame Pacing for every other third frame. Reverting to OptiFG alleviated this problem for my rig. (Your mileage may vary, considering that some people aren't experiencing this issue.)",
+        "The wiki recommends a stronger HUD fix setting for OptiFG; this is not auto-applied because it is OptiFG-specific."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -1459,7 +1508,8 @@
         "Enhanced edition is the only version with DLSS 2, Standard edition is not supported due to DLSS1",
         "Upscalers work, but Optiscaler Overlay does not and can't be invoked due to not being able to capture keyboard inputs (check Notes) - change settings in Optiscaler.ini only.",
         "WORKAROUND FOR INVISIBLE OVERLAY - in combination with SpecialK, Opti Overlay becomes visible and useable (_albeit mouse input still doesn't work, so KBM is required - arrow keys, Tab and Space_) Install SpecialK using Opti's \"plugins\" folder method (link) Get SpecialK64.dll, rename it to whatever you renamed Opti (usually dxgi.dll) and put it in a plugins folder where Metro game exe is located - Tutorial _SK might enable its VRR frame cap, so disable it from SK Overlay by unticking Framerate Limit if needed_",
-        "HUDfix incompatible, can't capture the HUD/UI fully"
+        "HUDfix incompatible, can't capture the HUD/UI fully",
+        "For XeFG, the wiki recommends ForceBorderless=true, but that setting is from newer OptiScaler versions and is not auto-applied on our 0.7.9 base."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -1579,7 +1629,8 @@
       "notes": [
         "OptiScaler wiki lists multiple compatible DLL names: d3d12.dll, dxgi.dll.",
         "In-game borderless setting may not be working properly for XeFG, workaround in the above section",
-        "DLSSG via Streamline inputs require an enabled frame cap/limit, otherwise corruptions happen - game screws up SL input timing without frame cap"
+        "DLSSG via Streamline inputs require an enabled frame cap/limit, otherwise corruptions happen - game screws up SL input timing without frame cap",
+        "For XeFG startup issues, the wiki recommends ForceBorderless=true in fullscreen mode, but that setting is from newer OptiScaler versions and is not auto-applied on our 0.7.9 base."
       ],
       "recommended_method": null,
       "recommended_methods": [
@@ -1712,7 +1763,8 @@
       "notes": [
         "To enable DLSS-FG inputs, create an Engine.ini file at %LOCALAPPDATA%\\QZSim\\Saved\\Config\\Windows & paste the following into it: ini [SystemSettings] r.Streamline.DilateMotionVectors=0 r.Streamline.DLSSG.Enable=1 t.Streamline.Reflex.Enable=1 r.NGX.DLSS.DilateMotionVectors=0",
         "To use native XeFG, create an Engine.ini file at %LOCALAPPDATA%\\QZSim\\Saved\\Config\\Windows & paste the following into it: ini [SystemSettings] r.XeSS.Enabled=1 r.XeFG.Enabled=1 r.XeLL.Enabled=1",
-        "Intel cards need to set Dxgi=false and StreamlineSpoofing=false in OptiScaler.ini to not crash."
+        "Intel cards need to set Dxgi=false and StreamlineSpoofing=false in OptiScaler.ini to not crash.",
+        "The wiki recommends FsrNonLinearColorSpace=true for FSR4 sky/rain effects, but that key is not present in our 0.7.9 OptiScaler base so it is not auto-applied."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -2022,7 +2074,8 @@
         "Dxgi=false enough to get DLSS inputs, but SL spoof doesn't expose Reflex",
         "Dxgi=true needed for AMD/Intel to unlock Reflex and DLSS FG for Nukems mod",
         "XeSS inputs only work for XeSS->Opti XeSS or XeSS->FSR4",
-        "FSR2 inputs not supported even with Engine.ini tweak command"
+        "FSR2 inputs not supported even with Engine.ini tweak command",
+        "The wiki notes that Dxgi=false is enough for DLSS inputs, but Dxgi=true may still be needed to unlock Reflex and DLSS FG for Nukem's mod on AMD/Intel."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -2144,6 +2197,27 @@
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/STALKER-Enhanced-Editions",
       "steam_name": "STALKER Enhanced Editions",
       "wiki_slug": "STALKER-Enhanced-Editions"
+    },
+    "STAR-WARS-Jedi-Fallen-Order": {
+      "notes": [
+        "Luma-based setup page with multiple install methods; no single DLL filename is recommended in the wiki table.",
+        "On AMD/Intel, the wiki recommends Dxgi=false together with DontUseNTShared=true.",
+        "Method 2 in the wiki also recommends LoadReshade=true, but only for the ReShade-through-OptiScaler setup."
+      ],
+      "recommended_method": null,
+      "recommended_methods": [],
+      "recommended_optiscaler_ini_overrides": {
+        "Dx11withDx12": {
+          "DontUseNTShared": "true"
+        },
+        "Spoofing": {
+          "Dxgi": "false"
+        }
+      },
+      "source": "OptiScaler wiki",
+      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/STAR-WARS-Jedi-Fallen-Order",
+      "steam_name": "STAR WARS Jedi Fallen Order",
+      "wiki_slug": "STAR-WARS-Jedi-Fallen-Order"
     },
     "STAR-WARS-Jedi-Survivor": {
       "notes": [
@@ -2323,7 +2397,8 @@
     "Starfield": {
       "notes": [
         "FSR3 inputs don't work and end up crashing - use either DLSS or XeSS instead",
-        "All FG outputs require Set Depth as ValidNow and Set Velocity as ValidNow (under Advanced FG Settings) to avoid visual artifacts"
+        "All FG outputs require Set Depth as ValidNow and Set Velocity as ValidNow (under Advanced FG Settings) to avoid visual artifacts",
+        "The wiki's newer FG guidance uses DepthValidNow and VelocityValidNow, but those keys are not available in our 0.7.9 OptiScaler base so they are not auto-applied."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -2412,7 +2487,8 @@
     "The-First-Berserker-Khazan": {
       "notes": [
         "Run in DirectX 12 mode.",
-        "OptiPatcher recommended instead of spoofing for DLSS(G) inputs."
+        "OptiPatcher recommended instead of spoofing for DLSS(G) inputs.",
+        "The wiki's XeFG guidance relies on fakenvapi Force Reflex settings rather than OptiScaler.ini overrides."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -2688,7 +2764,8 @@
         "To get rid of the rainbow pixels found in certain effects, you must play the game with Opti FG turned on",
         "Using XeSS causes flickering in ambient occlusion and shadows, regardless of having Auto Exposure ON",
         "Using XeSS or FSR via DLSS inputs will cause rainbow pixels to appear around smoke, dust, and other certain effects. (There's a way to resolve this below, in the Notes section.)",
-        "Using Opti FG causes ghosting/garbling around the HUD elements. Although using FG HUD Fix at 2 value (and beyond) addresses the issue, it also causes the game to feel sluggish in comparison to the default 1 setting"
+        "Using Opti FG causes ghosting/garbling around the HUD elements. Although using FG HUD Fix at 2 value (and beyond) addresses the issue, it also causes the game to feel sluggish in comparison to the default 1 setting",
+        "The wiki's recommended FG path uses FGType=optifg, which is OptiFG-specific and is not auto-applied here."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
