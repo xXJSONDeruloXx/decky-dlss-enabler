@@ -406,6 +406,11 @@ function Content() {
     return "";
   }, [selectedGame, status, statusLoading]);
 
+  const focusableFieldProps = {
+    focusable: true,
+    highlightOnFocus: true,
+  } as const;
+
   return (
     <PanelSection>
       <PanelSectionRow>
@@ -429,27 +434,27 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="Game">{selectedGame?.name ?? "—"}</Field>
+        <Field {...focusableFieldProps} label="Game">{selectedGame?.name ?? "—"}</Field>
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="App ID">{selectedGame?.appid ?? "—"}</Field>
+        <Field {...focusableFieldProps} label="App ID">{selectedGame?.appid ?? "—"}</Field>
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="Target ready">
+        <Field {...focusableFieldProps} label="Target ready">
           {selectedGame && status?.status === "success" ? (status.prefix_exists ? "Yes" : "No") : "—"}
         </Field>
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="Patched">
+        <Field {...focusableFieldProps} label="Patched">
           {selectedGame && status?.status === "success" ? (status.patched ? "Yes" : "No") : "—"}
         </Field>
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="Current DLL name">
+        <Field {...focusableFieldProps} label="Current DLL name">
           {selectedGame && status?.status === "success" && status.method
             ? (status.proxy_filename || `${status.method}.dll`)
             : "—"}
@@ -458,7 +463,7 @@ function Content() {
 
       {hasRecommendationNotes ? (
         <PanelSectionRow>
-          <Field label="Recommendation notes">
+          <Field {...focusableFieldProps} label="Recommendation notes">
             <div>
               {status?.recommendation_notes?.map((note, index) => (
                 <div key={`${note}-${index}`}>• {note}</div>
@@ -469,7 +474,7 @@ function Content() {
       ) : null}
 
       <PanelSectionRow>
-        <Field label="DLSS Enabler version">
+        <Field {...focusableFieldProps} label="DLSS Enabler version">
           {versionDisplay.color ? (
             <span style={{ color: versionDisplay.color, fontWeight: 600 }}>{versionDisplay.text}</span>
           ) : versionDisplay.text}
@@ -477,7 +482,7 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="Bundled version">
+        <Field {...focusableFieldProps} label="Bundled version">
           {selectedGame && status?.status === "success"
             ? (status.bundled_asset_version || "—")
             : "—"}
@@ -485,7 +490,7 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="FSR4 sidecar">
+        <Field {...focusableFieldProps} label="FSR4 sidecar">
           {fsr4Display.color ? (
             <span style={{ color: fsr4Display.color, fontWeight: 600 }}>{fsr4Display.text}</span>
           ) : fsr4Display.text}
@@ -493,7 +498,7 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="OptiScaler base">
+        <Field {...focusableFieldProps} label="OptiScaler base">
           {selectedGame && status?.status === "success"
             ? (status.fsr4_enabled ? (status.fsr4_optiscaler_version || "0.7.9") : "—")
             : "—"}
@@ -502,7 +507,7 @@ function Content() {
 
       {statusMessage ? (
         <PanelSectionRow>
-          <Field label="Status">{statusMessage}</Field>
+          <Field {...focusableFieldProps} label="Status">{statusMessage}</Field>
         </PanelSectionRow>
       ) : null}
 
@@ -541,7 +546,7 @@ function Content() {
 
       {applyRecommendationsEnabled && selectedFsr4 === "enabled" && effectiveIniOverrideLines.length ? (
         <PanelSectionRow>
-          <Field label="Additional OptiScaler.ini overrides">
+          <Field {...focusableFieldProps} label="Additional OptiScaler.ini overrides">
             <div>
               {effectiveIniOverrideLines.map((line, index) => (
                 <div key={`${line}-${index}`}>• {line}</div>
@@ -585,7 +590,7 @@ function Content() {
 
       {resultMessage ? (
         <PanelSectionRow>
-          <Field label="Last action">
+          <Field {...focusableFieldProps} label="Last action">
             <div>
               {resultMessage.split("\n").map((line, index) => (
                 <div key={`${line}-${index}`}>{line || "\u00A0"}</div>
