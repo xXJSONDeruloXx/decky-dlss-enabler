@@ -251,9 +251,15 @@ function Content() {
       : "—"),
     [status?.recommended_method],
   );
+  const methodDropdownOptions = useMemo(
+    () => METHOD_OPTIONS.map((entry) => ({
+      data: entry.value,
+      label: entry.value === status?.recommended_method ? `${entry.label} (recommended)` : entry.label,
+    })),
+    [status?.recommended_method],
+  );
   const hasRecommendation = Boolean(
     status?.recommended_method ||
-    status?.recommendation_source ||
     (status?.recommendation_notes && status.recommendation_notes.length),
   );
 
@@ -327,12 +333,6 @@ function Content() {
       setBusyAction(null);
     }
   }, [loadStatus, selectedAppId, selectedGame]);
-
-  const handleUseRecommendedMethod = useCallback(() => {
-    if (!status?.recommended_method) return;
-    lastSelectedMethod = status.recommended_method;
-    setSelectedMethod(status.recommended_method);
-  }, [status?.recommended_method]);
 
   const versionDisplay = useMemo(() => {
     if (!selectedGame || status?.status !== "success" || !status.patched) {
@@ -449,17 +449,6 @@ function Content() {
         </PanelSectionRow>
       ) : null}
 
-      {status?.recommendation_source ? (
-        <PanelSectionRow>
-          <Field label="Recommendation source">
-            <div>
-              <div>{status.recommendation_source}</div>
-              {status.recommendation_wiki_url ? <div>{status.recommendation_wiki_url}</div> : null}
-            </div>
-          </Field>
-        </PanelSectionRow>
-      ) : null}
-
       {status?.recommendation_notes?.length ? (
         <PanelSectionRow>
           <Field label="Recommendation notes">
@@ -517,7 +506,7 @@ function Content() {
           menuLabel="Injection method"
           strDefaultLabel="Choose DLL name"
           selectedOption={selectedMethod}
-          rgOptions={METHOD_OPTIONS.map((entry) => ({ data: entry.value, label: entry.label }))}
+          rgOptions={methodDropdownOptions}
           onChange={(option) => {
             const nextMethod = String(option.data);
             lastSelectedMethod = nextMethod;
@@ -532,18 +521,6 @@ function Content() {
           {selectedMethodLabel}
         </Field>
       </PanelSectionRow>
-
-      {status?.recommended_method ? (
-        <PanelSectionRow>
-          <ButtonItem
-            layout="below"
-            onClick={handleUseRecommendedMethod}
-            disabled={!selectedGame || busyAction !== null || selectedMethod === status.recommended_method}
-          >
-            Use recommended DLL name ({recommendedMethodLabel})
-          </ButtonItem>
-        </PanelSectionRow>
-      ) : null}
 
       <PanelSectionRow>
         <DropdownItem
