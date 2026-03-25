@@ -342,7 +342,8 @@
         "Capcom RE games in general require REFramework for Optiscaler to work",
         "If using DLSS inputs keeps crashing, try enabling RestoreComputeSignature=true or RestoreGraphicSignature=true in Optiscaler.ini (or Restore Compute/Graphic Root Signature under Root Signatures menu in Opti Overlay)",
         "For MH Rise, RestoreComputeSignature=true was enough to fix DLSS crashes",
-        "To fix GUI with DLSS inputs (with/without FG), try enabling RestoreComputeSignature=true or RestoreGraphicSignature=true in Optiscaler.ini (or Restore Compute/Graphic Root Signature under Root Signatures menu in Opti Overlay)"
+        "To fix GUI with DLSS inputs (with/without FG), try enabling RestoreComputeSignature=true or RestoreGraphicSignature=true in Optiscaler.ini (or Restore Compute/Graphic Root Signature under Root Signatures menu in Opti Overlay)",
+        "RestoreComputeSignature=true and RestoreGraphicSignature=true are crash / UI-fix troubleshooting options in the wiki, so they are kept as notes rather than auto-applied defaults."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -508,7 +509,8 @@
     "DYNASTY-WARRIORS-ORIGINS": {
       "notes": [
         "DLSS-FG interpolates the HUD. XeFG output is recommended for the least HUD ghosting.",
-        "Intel Arc users might need to set Dxgi=true to unlock DLSS/DLSS-FG."
+        "Intel Arc users might need to set Dxgi=true to unlock DLSS/DLSS-FG.",
+        "The wiki only mentions Dxgi=true as a possible Intel Arc unlock path; our 0.7.9 default Dxgi=auto already covers the normal spoofing path, so no extra override is needed."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -961,7 +963,9 @@
         "Although the game doesn\u2019t natively support FSR, FSR 3.X works fine (without any additional toggles needed) via DLSS inputs. (I haven't tested it with XeSS inputs, but I'm certain that it should work as well)",
         "If you want to use Anti-Lag 2/LatencyFlex injection with OptiFG, then include both fakenvapi, and nvapi64.dll files within the Win64 folder (C:\\SteamLibrary\\steamapps\\common\\Flintlock The Siege of Dawn\\Saltpeter\\Binaries\\Win64). Once the game recognizes the spoofed Nvidia GPU, you'll have access to the Nvidia Reflex Low Latency option",
         "If you prefer to use Nukems' DLSSG-to-FSR3 mod over OptiFG, please refer to the bullet point above by also including the dlssg_to_fsr3_amd_is_better.dll file within the same folder. Once you set FGType=nukems in OptiScaler.ini and it's successfully recognized, the Frame Generation option will become available. Also, Reflex Low Latency will automatically be forced on, when using Frame Gen as well",
-        "The wiki notes FGType=nukems when using Nukem's mod, which already matches our current managed FSR4 sidecar default."
+        "The wiki notes FGType=nukems when using Nukem's mod, which already matches our current managed FSR4 sidecar default.",
+        "The wiki's FG HUD Fix recommendation is OptiFG-specific, so it is not auto-applied here.",
+        "The wiki's FGType=nukems note already matches our current managed FSR4 sidecar default, so no extra override is needed."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -975,7 +979,8 @@
     },
     "Forgive-me-Father-2": {
       "notes": [
-        "The wiki notes FGType=Nukems when using Nukem's mod, which already matches our current managed FSR4 sidecar default."
+        "The wiki notes FGType=Nukems when using Nukem's mod, which already matches our current managed FSR4 sidecar default.",
+        "The wiki's FGType=Nukems guidance already matches our current managed FSR4 sidecar default, so no extra override is needed."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -1066,7 +1071,9 @@
         "Run the game in DirectX 12 mode (launch option -dx12).",
         "DLSS inputs without the performance penalty require OptiPatcher.",
         "DLSS setting may need to be toggled back on after every boot.",
-        "Spoofing for DLSS inputs (Dxgi=auto) causes a ~9% performance penalty. See the notes section for a workaround."
+        "Spoofing for DLSS inputs (Dxgi=auto) causes a ~9% performance penalty. See the notes section for a workaround.",
+        "The wiki points to OptiPatcher / launch-mode guidance rather than a stable OptiScaler.ini override, so no automatic override is applied here.",
+        "The wiki points to OptiPatcher and DX12 launch-mode guidance rather than a stable OptiScaler.ini override, so no automatic override is applied here."
       ],
       "recommended_method": "winmm",
       "recommended_methods": [
@@ -1415,20 +1422,27 @@
       "notes": [
         "Recommended to use XeSS inputs if you want to avoid spoofing, or expose DLSS inputs without spoofing with OptiPatcher",
         "Requires EnableFsr3Inputs=false in OptiScaler.ini, otherwise crashes when switching to FSR inputs",
-        "FSR 3.1 inputs additionally require this 3.1 inputs crashing fix, otherwise they won't work with Opti"
+        "FSR 3.1 inputs additionally require this 3.1 inputs crashing fix, otherwise they won't work with Opti",
+        "The wiki recommends disabling FSR3 inputs with EnableFsr3Inputs=false because switching to them otherwise crashes."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Inputs": {
+          "EnableFsr3Inputs": "false"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Keeper",
       "steam_name": "Keeper",
       "wiki_slug": "Keeper"
     },
     "Kena-Bridge-of-Spirits": {
-      "notes": [],
+      "notes": [
+        "The wiki note that Nvidia spoofing is required for DLSS on AMD/Intel is already satisfied by the 0.7.9 default Dxgi=auto behavior, so no extra override is needed."
+      ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
@@ -1618,7 +1632,8 @@
         "Optiscaler Overlay now invokes properly, but mouse input only works in pause menu, while keyboard input always (arrow keys, Tab and Space)",
         "Game seems to force DLSS Quality preset by default (only a toggle, no presets), but UpscaleRatioOverrideEnabled=true and setting the value UpscaleRatioOverrideValue= work (or use the Upscale Ratio Override in the overlay then press Save INI), albeit hit and miss - on 1080p, 1.5, 1.7., 2.0 and 3.0 worked, even random 2.5, but 1.0, 1.2 and 1.3 resulted in black bars and artifacts.",
         "Opti can't create the log file (missing permissions)",
-        "Old method - use Opti as nvngx.dll and run EnableSignatureOverride.reg, use XeSS 1.1"
+        "Old method - use Opti as nvngx.dll and run EnableSignatureOverride.reg, use XeSS 1.1",
+        "UpscaleRatioOverrideEnabled and UpscaleRatioOverrideValue are user-tuning options in the wiki rather than safe per-game defaults, so they are not auto-applied here."
       ],
       "recommended_method": null,
       "recommended_methods": [
@@ -1649,7 +1664,8 @@
         "Unlike other Capcom games, REFramework isn't required to load OptiScaler. Also unlike them, spoofing is required to expose DLSS inputs on AMD/Intel (set Dxgi=auto in OptiScaler.ini).",
         "AMD/Intel cards require fakenvapi to use DLSS inputs.",
         "Installing OptiScaler as dxgi.dll doesn't expose DLSS inputs on AMD/Intel. Additionally, dbghelp.dll/winmm.dll conflict with REFramework, leaving d3d12.dll as the optimal filename.",
-        "Known working combinations: OptiScaler alone: install as d3d12.dll/winmm.dll. With Ultimate ASI Loader: install as OptiScaler.asi and Ultimate ASI Loader as dinput8.dll. With REFramework: install as d3d12.dll, REFramework as dinput8.dll. With REFramework Ultimate ASI Loader: install as OptiScaler.asi, REFramework as dinput8.dll, Ultimate ASI Loader as winmm.dll."
+        "Known working combinations: OptiScaler alone: install as d3d12.dll/winmm.dll. With Ultimate ASI Loader: install as OptiScaler.asi and Ultimate ASI Loader as dinput8.dll. With REFramework: install as d3d12.dll, REFramework as dinput8.dll. With REFramework Ultimate ASI Loader: install as OptiScaler.asi, REFramework as dinput8.dll, Ultimate ASI Loader as winmm.dll.",
+        "This game is unusual for Capcom: the wiki says spoofing is required to expose DLSS inputs on AMD/Intel, which matches the 0.7.9 default Dxgi=auto behavior, so no extra override is needed."
       ],
       "recommended_method": null,
       "recommended_methods": [
@@ -1783,7 +1799,8 @@
         "Recommended to use XeSS inputs on AMD/Intel",
         "FSR 3.1 inputs are not supported - custom implementation",
         "DLSS inputs seem to revert on each boot back to FSR and cause a crash _(probably works fine on Nvidia)_ _Recommended to use XeSS inputs on AMD/Intel_",
-        "Game seems to force a monitor refresh frame cap (Vsync-like cap) when using XeFG Can be fixed by setting OverrideVsync=true in OptiScaler.ini and ticking Vsync OFF in Opti Overlay - Vsync settings"
+        "Game seems to force a monitor refresh frame cap (Vsync-like cap) when using XeFG Can be fixed by setting OverrideVsync=true in OptiScaler.ini and ticking Vsync OFF in Opti Overlay - Vsync settings",
+        "The wiki's OverrideVsync=true guidance targets a newer OptiScaler setting that is not present in our 0.7.9 base, so it is not auto-applied here."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -1796,12 +1813,20 @@
       "wiki_slug": "Nioh-3"
     },
     "No-Man's-Sky": {
-      "notes": [],
+      "notes": [
+        "On AMD/Intel, the wiki says Vulkan=true and VulkanExtensionSpoofing=true are required together with fakenvapi for DLSS inputs, so those are safe auto-applied recommendations for this game.",
+        "The later FSR-override example in the wiki uses default .bat install behavior rather than additional OptiScaler.ini changes."
+      ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Spoofing": {
+          "Vulkan": "true",
+          "VulkanExtensionSpoofing": "true"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/No-Man's-Sky",
       "steam_name": "No Man's Sky",
@@ -1994,7 +2019,9 @@
       "wiki_slug": "Ready-or-Not"
     },
     "Red-Dead-Redemption": {
-      "notes": [],
+      "notes": [
+        "The wiki's Fsr3Pattern=true note targets an older nvngx.ini path rather than our current OptiScaler.ini-based setup, so it is not auto-applied here."
+      ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
@@ -2216,7 +2243,8 @@
         "XeSS inputs only work for XeSS->Opti XeSS or XeSS->FSR4",
         "FSR2 inputs not supported even with Engine.ini tweak command",
         "The wiki notes that Dxgi=false is enough for DLSS inputs, but Dxgi=true may still be needed to unlock Reflex and DLSS FG for Nukem's mod on AMD/Intel.",
-        "The wiki gives conflicting guidance: Dxgi=false is enough for DLSS inputs, but Dxgi=true may still be needed to unlock Reflex and DLSS FG for Nukem's mod, so no automatic override is applied."
+        "The wiki gives conflicting guidance: Dxgi=false is enough for DLSS inputs, but Dxgi=true may still be needed to unlock Reflex and DLSS FG for Nukem's mod, so no automatic override is applied.",
+        "The wiki gives conflicting spoofing guidance depending on whether you want plain DLSS inputs or Reflex / Nukem FG behavior, so no automatic override is applied here."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -2230,7 +2258,8 @@
     },
     "Revenge-of-the-Savage-Planet": {
       "notes": [
-        "FSR 3.1 inputs require this 3.1 inputs crashing fix, otherwise crash on switch - or just disable them with EnableFfxInputs=false, or on older Opti, Ffx=false in Optiscaler.ini"
+        "FSR 3.1 inputs require this 3.1 inputs crashing fix, otherwise crash on switch - or just disable them with EnableFfxInputs=false, or on older Opti, Ffx=false in Optiscaler.ini",
+        "The wiki's EnableFfxInputs=false / Ffx=false guidance is a crash workaround for FSR 3.1 inputs, so it is kept as a note rather than auto-applied by default."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -2294,13 +2323,19 @@
     "Rune-Factory-Guardians-of-Azuma": {
       "notes": [
         "If you want to try using FSR 3.0 inputs, maybe try using this 3.0 inputs crashing fix to see if it works",
-        "To fix crashes on boot, disable FSR3 inputs all together (fsr3=false in pre9, or EnableFsr3Inputs=false in pre12 Nightly) and use DLSS inputs."
+        "To fix crashes on boot, disable FSR3 inputs all together (fsr3=false in pre9, or EnableFsr3Inputs=false in pre12 Nightly) and use DLSS inputs.",
+        "The wiki focuses on general compatibility and does not provide a stable OptiScaler.ini override worth auto-applying here.",
+        "The wiki recommends disabling FSR3 inputs with EnableFsr3Inputs=false because old FSR3 inputs crash the game."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Inputs": {
+          "EnableFsr3Inputs": "false"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Rune-Factory-Guardians-of-Azuma",
       "steam_name": "Rune Factory Guardians of Azuma",
@@ -2508,7 +2543,9 @@
         "both mods require the nvngx_dlss.dll that they provide to be copied into games root folder (next to game exe) and renamed as nvngx.dll to prevent crashing",
         "nvngx_dlss.dll location for both mods are (location of these folders will vary on way you are modding game)",
         "Community Shaders nvngx_dlss.dll location is Shaders\\Upscaling\\Streamline\\",
-        "PureDarks nvngx_dlss.dll location is UpscalerBasePlugin\\"
+        "PureDarks nvngx_dlss.dll location is UpscalerBasePlugin\\",
+        "The wiki guidance is primarily setup / compatibility advice rather than a stable OptiScaler.ini override, so it remains notes-only.",
+        "The wiki's OverlayMenu=false guidance only applies to one PureDark-based mod path, so it is kept as a method-specific note rather than auto-applied here."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -2574,7 +2611,9 @@
       "wiki_slug": "Starfield"
     },
     "Still-Wakes-the-Deep": {
-      "notes": [],
+      "notes": [
+        "The wiki guidance here is mostly Engine.ini and RR / OptiFG tuning rather than a stable OptiScaler.ini override, so it is not auto-applied here."
+      ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
@@ -2600,13 +2639,19 @@
     "Supraworld": {
       "notes": [
         "Game crashes due to some old FSR3 inputs - to fix, set EnableFsr3Inputs=false in OptiScaler.ini",
-        "FSR 3.1 inputs require creating Engine.ini in regular location and adding this 3.1 inputs fix"
+        "FSR 3.1 inputs require creating Engine.ini in regular location and adding this 3.1 inputs fix",
+        "The wiki guidance is primarily setup / compatibility advice rather than a stable OptiScaler.ini override, so it remains notes-only.",
+        "The wiki recommends StreamlineSpoofing=false if you want to use FSR 3.1 / FFX inputs without crashes."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Spoofing": {
+          "StreamlineSpoofing": "false"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Supraworld",
       "steam_name": "Supraworld",
@@ -2635,7 +2680,9 @@
     },
     "The-Elder-Scrolls-IV-Oblivion-Remastered": {
       "notes": [
-        "Streamline Spoofing causes a crash when trying to hook FSR 3.1/FFX inputs when enabled - set StreamlineSpoofing=false in OptiScaler.ini to fix if you want to use FSR 3.1 inputs only"
+        "Streamline Spoofing causes a crash when trying to hook FSR 3.1/FFX inputs when enabled - set StreamlineSpoofing=false in OptiScaler.ini to fix if you want to use FSR 3.1 inputs only",
+        "The wiki guidance is primarily setup / compatibility advice rather than a stable OptiScaler.ini override, so it remains notes-only.",
+        "The wiki's StreamlineSpoofing=false recommendation only applies if you specifically want to use FSR 3.1 / FFX inputs, so it is kept as a conditional note rather than auto-applied here."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
@@ -2910,13 +2957,19 @@
     "Way-of-the-Hunter": {
       "notes": [
         "Use DX12",
-        "DX11 crashes if FSR2 is enabled - either set EnableFsr2Inputs=false in OptiScaler.ini, or run in DX12 mode (recommended)"
+        "DX11 crashes if FSR2 is enabled - either set EnableFsr2Inputs=false in OptiScaler.ini, or run in DX12 mode (recommended)",
+        "The wiki guidance is primarily setup / compatibility advice rather than a stable OptiScaler.ini override, so it remains notes-only.",
+        "The wiki recommends EnableFsr2Inputs=false to avoid DX11 crashes if FSR2 is enabled."
       ],
       "recommended_method": "dxgi",
       "recommended_methods": [
         "dxgi"
       ],
-      "recommended_optiscaler_ini_overrides": {},
+      "recommended_optiscaler_ini_overrides": {
+        "Inputs": {
+          "EnableFsr2Inputs": "false"
+        }
+      },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Way-of-the-Hunter",
       "steam_name": "Way of the Hunter",
@@ -2960,8 +3013,9 @@
       "notes": [
         "OptiScaler wiki lists multiple compatible DLL names: dxgi.dll, winmm.dll.",
         "XeFG output has lower latency than FSR FG output when fps is uncapped.",
-        "DLSSG via SL -> FSR-FG seems to crash - no fix yet",
-        "To unlock DLSS and DLSS-FG inputs (locked by the game to specific cards), paste this at Wuthering Waves\\Wuthering Waves Game\\Client\\Content\\Config\\Windows\\DeviceProfiles.ini: _This wasn't required for 9070XT when testing the Steam version_ Older Nvidia cards also might require setting Dxgi=true in OptiScaler.ini ini [Windows_RTX_30XX_Laptop DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_RTX_3060_Ti_Laptop DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_RTX_3060_Laptop DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_RTX_30XX_LOW_Laptop DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_RTX_30XX DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_RTX_3060_Ti DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_Titan_RTX DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_RTX_2080 DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_RTX_2070S DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_RTX_High DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_RTX_3060 DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_RTX_30XX_LOW DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_GTX_High DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_GTX_Mid DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_GTX_Low DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [AMD_Radeon_9xxx_Low DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [AMD_Radeon_7xxx DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [AMD_Radeon_7xxx_Low DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_AMD_VeryHigh DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_AMD_66XT DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_AMD_66xx DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_AMD_6xxx DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_AMD_High DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_AMD_Mid DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_AMD_Graphics DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_IntelARCB580 DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_IntelARCB570 DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_IntelARCA770 DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_IntelARCMiddle DeviceProfile] CVars=r.Streamline.InitializePlugin=1 [Windows_Intel DeviceProfile] CVars=r.Streamline.InitializePlugin=1 endif::collapse[]"
+        "DLSSG via SL -> FSR-FG seems to crash in the wiki reports, with no fix yet.",
+        "To unlock DLSS and DLSS-FG inputs, the wiki primarily relies on DeviceProfiles.ini edits rather than a general OptiScaler.ini tweak.",
+        "The wiki's Dxgi=true note only applies to some older Nvidia cards after DeviceProfiles.ini edits, so it is not auto-applied here for our AMD-focused setup."
       ],
       "recommended_method": null,
       "recommended_methods": [
