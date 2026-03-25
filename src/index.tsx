@@ -4,6 +4,7 @@ import {
   Field,
   PanelSection,
   PanelSectionRow,
+  ToggleField,
   staticClasses,
 } from "@decky/ui";
 import { callable, definePlugin, toaster } from "@decky/api";
@@ -114,7 +115,7 @@ const METHOD_OPTIONS = [
 const listInstalledGames = callable<[], GameListResponse>("list_installed_games");
 const getGameStatus = callable<[appid: string], GameStatusResponse>("get_game_status");
 const patchGame = callable<
-  [appid: string, method: string, currentLaunchOptions: string, enableFsr4: boolean],
+  [appid: string, method: string, currentLaunchOptions: string, enableFsr4: boolean, applyRecommendations: boolean],
   PatchResponse
 >("patch_game");
 const unpatchGame = callable<[appid: string], UnpatchResponse>("unpatch_game");
@@ -152,6 +153,7 @@ const setAppLaunchOptions = (appid: number, launchOptions: string) => {
 let lastSelectedAppId = "";
 let lastSelectedMethod = "dxgi";
 let lastSelectedFsr4 = "disabled";
+let lastApplyRecommendations = "disabled";
 
 function Content() {
   const [games, setGames] = useState<GameInfo[]>([]);
@@ -159,6 +161,7 @@ function Content() {
   const [selectedAppId, setSelectedAppId] = useState<string>(() => lastSelectedAppId);
   const [selectedMethod, setSelectedMethod] = useState<string>(() => lastSelectedMethod);
   const [selectedFsr4, setSelectedFsr4] = useState<string>(() => lastSelectedFsr4);
+  const [applyRecommendations, setApplyRecommendations] = useState<string>(() => lastApplyRecommendations);
   const [status, setStatus] = useState<GameStatusResponse | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [busyAction, setBusyAction] = useState<"patch" | "unpatch" | null>(null);
@@ -241,16 +244,6 @@ function Content() {
     [games, selectedAppId],
   );
 
-  const selectedMethodLabel = useMemo(
-    () => METHOD_OPTIONS.find((entry) => entry.value === selectedMethod)?.label ?? `${selectedMethod}.dll`,
-    [selectedMethod],
-  );
-  const recommendedMethodLabel = useMemo(
-    () => (status?.recommended_method
-      ? (METHOD_OPTIONS.find((entry) => entry.value === status.recommended_method)?.label ?? `${status.recommended_method}.dll`)
-      : "—"),
-    [status?.recommended_method],
-  );
   const methodDropdownOptions = useMemo(
     () => METHOD_OPTIONS.map((entry) => ({
       data: entry.value,
@@ -258,10 +251,35 @@ function Content() {
     })),
     [status?.recommended_method],
   );
-  const hasRecommendation = Boolean(
+  const hasRecommendationNotes = Boolean(status?.recommendation_notes && status.recommendation_notes.length);
+  const hasApplicableRecommendations = Boolean(
     status?.recommended_method ||
-    (status?.recommendation_notes && status.recommendation_notes.length),
+    (status?.recommended_optiscaler_ini_overrides && Object.keys(status.recommended_optiscaler_ini_overrides).length),
   );
+  const applyRecommendationsEnabled = applyRecommendations === "enabled" && hasApplicableRecommendations;
+  const effectiveMethod = applyRecommendationsEnabled && status?.recommended_method
+    ? status.recommended_method
+    : selectedMethod;
+  const effectiveMethodLabel = useMemo(
+    () => METHOD_OPTIONS.find((entry) => entry.value === effectiveMethod)?.label ?? `${effectiveMethod}.dll`,
+    [effectiveMethod],
+  );
+  const effectiveIniOverrides = useMemo(
+    () => (applyRecommendationsEnabled ? (status?.recommended_optiscaler_ini_overrides ?? {}) : {}),
+    [applyRecommendationsEnabled, status?.recommended_optiscaler_ini_overrides],
+  );
+  const effectiveIniOverrideLines = useMemo(
+    () => Object.entries(effectiveIniOverrides).flatMap(([section, values]) =>
+      Object.entries(values).map(([key, value]) => `[${section}] ${key}=${value}`),
+    ),
+    [effectiveIniOverrides],
+  );
+  const injectionMethodDescription = useMemo(() => {
+    if (applyRecommendationsEnabled && status?.recommended_method) {
+      return `Using ${effectiveMethodLabel} (recommended). Turn recommendations off to choose manually.`;
+    }
+    return getMethodHint(selectedMethod);
+  }, [applyRecommendationsEnabled, effectiveMethodLabel, selectedMethod, status?.recommended_method]);
 
   const canPatch = Boolean(selectedGame && status?.status === "success" && status.prefix_exists && !busyAction);
   const canUnpatch = Boolean(selectedGame && status?.status === "success" && status.marker_name && !busyAction);
@@ -272,12 +290,12 @@ function Content() {
     if (busyAction === "patch") return "Patching...";
     if (!selectedGame) return "Patch selected game";
     if (!status?.prefix_exists) return "Patch target not found";
-    if (status?.method && status.method !== selectedMethod) return `Switch to ${selectedMethodLabel}${suffix}`;
-    if (status?.reinstall_recommended || status?.fsr4_reinstall_recommended) return `Reinstall ${selectedMethodLabel}${suffix}`;
-    if (status?.upgrade_available) return `Upgrade to ${status.bundled_asset_version ?? selectedMethodLabel}`;
-    if (status?.marker_name) return `Reinstall ${selectedMethodLabel}${suffix}`;
-    return `Patch with ${selectedMethodLabel}${suffix}`;
-  }, [busyAction, selectedFsr4, selectedGame, selectedMethodLabel, selectedMethod, status]);
+    if (status?.method && status.method !== effectiveMethod) return `Switch to ${effectiveMethodLabel}${suffix}`;
+    if (status?.reinstall_recommended || status?.fsr4_reinstall_recommended) return `Reinstall ${effectiveMethodLabel}${suffix}`;
+    if (status?.upgrade_available) return `Upgrade to ${status.bundled_asset_version ?? effectiveMethodLabel}`;
+    if (status?.marker_name) return `Reinstall ${effectiveMethodLabel}${suffix}`;
+    return `Patch with ${effectiveMethodLabel}${suffix}`;
+  }, [busyAction, effectiveMethod, effectiveMethodLabel, selectedFsr4, selectedGame, status]);
 
   const handlePatch = useCallback(async () => {
     if (!selectedGame || !selectedAppId) return;
@@ -286,16 +304,22 @@ function Content() {
     setResultMessage("");
     try {
       const currentLaunchOptions = await getAppLaunchOptions(Number(selectedAppId));
-      const result = await patchGame(selectedAppId, selectedMethod, currentLaunchOptions, selectedFsr4 === "enabled");
+      const result = await patchGame(
+        selectedAppId,
+        selectedMethod,
+        currentLaunchOptions,
+        selectedFsr4 === "enabled",
+        applyRecommendationsEnabled,
+      );
       if (result.status !== "success") {
         throw new Error(result.message || "Patch failed.");
       }
 
       setAppLaunchOptions(Number(selectedAppId), result.launch_options || "");
-      setResultMessage(result.message || `Patched ${selectedGame.name} using ${selectedMethodLabel}.`);
+      setResultMessage(result.message || `Patched ${selectedGame.name} using ${effectiveMethodLabel}.`);
       toaster.toast({
         title: "DLSS Enabler",
-        body: result.message || `Patched ${selectedGame.name} using ${selectedMethodLabel}.`,
+        body: result.message || `Patched ${selectedGame.name} using ${effectiveMethodLabel}.`,
       });
       await loadStatus(selectedAppId);
     } catch (error) {
@@ -305,7 +329,7 @@ function Content() {
     } finally {
       setBusyAction(null);
     }
-  }, [loadStatus, selectedAppId, selectedFsr4, selectedGame, selectedMethod, selectedMethodLabel]);
+  }, [applyRecommendationsEnabled, effectiveMethodLabel, loadStatus, selectedAppId, selectedFsr4, selectedGame, selectedMethod]);
 
   const handleUnpatch = useCallback(async () => {
     if (!selectedGame || !selectedAppId) return;
@@ -432,28 +456,11 @@ function Content() {
         </Field>
       </PanelSectionRow>
 
-      {hasRecommendation ? (
-        <PanelSectionRow>
-          <Field label="Recommended DLL name">
-            {status?.recommended_method ? (
-              <span
-                style={{
-                  color: status.recommended_method === selectedMethod ? "#3fb950" : undefined,
-                  fontWeight: status.recommended_method === selectedMethod ? 600 : undefined,
-                }}
-              >
-                {recommendedMethodLabel}
-              </span>
-            ) : "—"}
-          </Field>
-        </PanelSectionRow>
-      ) : null}
-
-      {status?.recommendation_notes?.length ? (
+      {hasRecommendationNotes ? (
         <PanelSectionRow>
           <Field label="Recommendation notes">
             <div>
-              {status.recommendation_notes.map((note, index) => (
+              {status?.recommendation_notes?.map((note, index) => (
                 <div key={`${note}-${index}`}>• {note}</div>
               ))}
             </div>
@@ -502,39 +509,55 @@ function Content() {
       <PanelSectionRow>
         <DropdownItem
           label="Injection method"
-          description={getMethodHint(selectedMethod)}
+          description={injectionMethodDescription}
           menuLabel="Injection method"
           strDefaultLabel="Choose DLL name"
-          selectedOption={selectedMethod}
+          selectedOption={effectiveMethod}
           rgOptions={methodDropdownOptions}
           onChange={(option) => {
             const nextMethod = String(option.data);
             lastSelectedMethod = nextMethod;
             setSelectedMethod(nextMethod);
           }}
-          disabled={!selectedGame || busyAction !== null}
+          disabled={!selectedGame || busyAction !== null || applyRecommendationsEnabled}
         />
       </PanelSectionRow>
 
-      <PanelSectionRow>
-        <Field label="Selected DLL name" description="The bundled DLSS Enabler proxy will be copied into the chosen game executable directory using this filename.">
-          {selectedMethodLabel}
-        </Field>
-      </PanelSectionRow>
+      {hasApplicableRecommendations ? (
+        <PanelSectionRow>
+          <ToggleField
+            label="Apply game recommendations"
+            description="Automatically use the recommended DLL name and any game-specific OptiScaler.ini overrides."
+            checked={applyRecommendationsEnabled}
+            onChange={(checked) => {
+              const nextValue = checked ? "enabled" : "disabled";
+              lastApplyRecommendations = nextValue;
+              setApplyRecommendations(nextValue);
+            }}
+            disabled={!selectedGame || busyAction !== null}
+          />
+        </PanelSectionRow>
+      ) : null}
+
+      {applyRecommendationsEnabled && selectedFsr4 === "enabled" && effectiveIniOverrideLines.length ? (
+        <PanelSectionRow>
+          <Field label="Additional OptiScaler.ini overrides">
+            <div>
+              {effectiveIniOverrideLines.map((line, index) => (
+                <div key={`${line}-${index}`}>• {line}</div>
+              ))}
+            </div>
+          </Field>
+        </PanelSectionRow>
+      ) : null}
 
       <PanelSectionRow>
-        <DropdownItem
+        <ToggleField
           label="FSR4 INT8 sidecar"
           description="Experimental: installs OptiScaler 0.7.9 FFX sidecar files plus FSR4 INT8 4.0.2b."
-          menuLabel="FSR4 INT8 sidecar"
-          strDefaultLabel="Choose sidecar mode"
-          selectedOption={selectedFsr4}
-          rgOptions={[
-            { data: "disabled", label: "Disabled" },
-            { data: "enabled", label: "Enabled (4.0.2b)" },
-          ]}
-          onChange={(option) => {
-            const nextValue = String(option.data);
+          checked={selectedFsr4 === "enabled"}
+          onChange={(checked) => {
+            const nextValue = checked ? "enabled" : "disabled";
             lastSelectedFsr4 = nextValue;
             setSelectedFsr4(nextValue);
           }}

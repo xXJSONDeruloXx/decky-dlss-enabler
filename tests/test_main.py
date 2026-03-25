@@ -378,7 +378,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.assertEqual(marker["fsr4_bundle_id"], self.fake_fsr4_bundle["id"])
         self.assertEqual(len(marker["managed_files"]), 3)
 
-    def test_patch_game_with_fsr4_applies_game_specific_ini_overrides(self):
+    def test_patch_game_with_fsr4_does_not_apply_game_specific_ini_overrides_without_opt_in(self):
         with mock.patch.object(
             self.plugin,
             "_load_quirks_db",
@@ -399,8 +399,55 @@ class PatchUnpatchFlowTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "success")
         config_text = (self.target_dir / plugin_main.FSR4_CONFIG_FILENAME).read_text(encoding="utf-8")
+        self.assertNotIn("[FrameGeneration]\nReflex=on", config_text)
+        self.assertNotIn("Reflex=on", config_text)
+
+    def test_patch_game_with_fsr4_applies_game_specific_ini_overrides_when_opted_in(self):
+        with mock.patch.object(
+            self.plugin,
+            "_load_quirks_db",
+            return_value={
+                "games": {
+                    "123": {
+                        "recommended_method": "dxgi",
+                        "recommended_optiscaler_ini_overrides": {
+                            "FrameGeneration": {
+                                "Reflex": "on",
+                            }
+                        },
+                    }
+                }
+            },
+        ):
+            result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True, True))
+
+        self.assertEqual(result["status"], "success")
+        config_text = (self.target_dir / plugin_main.FSR4_CONFIG_FILENAME).read_text(encoding="utf-8")
         self.assertIn("[FrameGeneration]", config_text)
         self.assertIn("Reflex=on", config_text)
+
+    def test_patch_game_uses_recommended_method_when_opted_in(self):
+        with mock.patch.object(
+            self.plugin,
+            "_load_quirks_db",
+            return_value={
+                "games": {
+                    "123": {
+                        "recommended_method": "dxgi",
+                        "recommended_optiscaler_ini_overrides": {},
+                    }
+                }
+            },
+        ):
+            result = self.run_async(self.plugin.patch_game("123", "winmm", "", False, True))
+
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["method"], "dxgi")
+        self.assertEqual(result["launch_options"], "WINEDLLOVERRIDES=dxgi=n,b SteamDeck=0 %command%")
+        self.assertTrue((self.target_dir / "dxgi.dll").exists())
+        self.assertFalse((self.target_dir / "winmm.dll").exists())
+        marker = self.read_marker_metadata("dxgi")
+        self.assertEqual(marker["method"], "dxgi")
 
     def test_unpatch_restores_previous_fsr4_sidecar_files(self):
         original_loader = self.target_dir / "amd_fidelityfx_dx12.dll"

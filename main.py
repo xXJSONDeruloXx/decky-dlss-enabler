@@ -1176,16 +1176,31 @@ class Plugin:
             self._log(f"get_game_status failed for {appid}: {exc}")
             return {"status": "error", "message": str(exc)}
 
-    async def patch_game(self, appid: str, method: str, current_launch_options: str = "", enable_fsr4: bool = False) -> dict:
+    async def patch_game(
+        self,
+        appid: str,
+        method: str,
+        current_launch_options: str = "",
+        enable_fsr4: bool = False,
+        apply_recommendations: bool = False,
+    ) -> dict:
         try:
-            normalized_method = self._normalize_method(method)
-            self._log(
-                f"patch_game start: appid={appid} method={normalized_method} enable_fsr4={enable_fsr4} original_launch_options={json.dumps(current_launch_options)}"
-            )
+            requested_method = self._normalize_method(method)
             asset_path = self._verify_bundled_asset()
             game_info = self._game_record(str(appid))
             if not game_info:
                 return {"status": "error", "message": "Game install path could not be resolved."}
+
+            quirks = self._game_quirks_payload(str(appid), game_info["name"])
+            effective_method = requested_method
+            if apply_recommendations and quirks.get("recommended_method"):
+                effective_method = self._normalize_method(str(quirks.get("recommended_method")))
+
+            self._log(
+                f"patch_game start: appid={appid} requested_method={requested_method} effective_method={effective_method} "
+                f"enable_fsr4={enable_fsr4} apply_recommendations={apply_recommendations} "
+                f"original_launch_options={json.dumps(current_launch_options)}"
+            )
 
             if self._is_game_running(game_info):
                 return {"status": "error", "message": "Close the game before patching."}
@@ -1199,7 +1214,7 @@ class Plugin:
             self._log(
                 f"patch_game target selection: install_root={install_root} target_dir={target_dir} target_exe={target_exe}"
             )
-            self._log_target_state("patch before cleanup", target_dir, normalized_method)
+            self._log_target_state("patch before cleanup", target_dir, effective_method)
 
             cleanup_result = self._cleanup_install_root(install_root)
             original_launch_options = self._original_launch_options_to_restore(
@@ -1210,11 +1225,11 @@ class Plugin:
                 f"patch after cleanup: original_launch_options={json.dumps(original_launch_options)} cleanup_result={json.dumps(cleanup_result, sort_keys=True)}"
             )
 
-            backup_created = self._prepare_target_proxy(target_dir, normalized_method)
-            target_proxy_path = target_dir / f"{normalized_method}.dll"
+            backup_created = self._prepare_target_proxy(target_dir, effective_method)
+            target_proxy_path = target_dir / f"{effective_method}.dll"
             self._log(f"patch copy start: source={asset_path} target={target_proxy_path}")
             shutil.copy2(asset_path, target_proxy_path)
-            self._log_target_state("patch after copy", target_dir, normalized_method)
+            self._log_target_state("patch after copy", target_dir, effective_method)
 
             copied_hash = self._file_sha256(target_proxy_path)
             if copied_hash.lower() != BUNDLED_ASSET_SHA256.lower():
@@ -1222,22 +1237,18 @@ class Plugin:
                     f"Copied proxy hash mismatch for {target_proxy_path.name}: expected {BUNDLED_ASSET_SHA256}, got {copied_hash}"
                 )
 
-            quirks = self._game_quirks_payload(str(appid), game_info["name"])
-
             managed_files: list[dict] = []
+            config_overrides = quirks.get("recommended_optiscaler_ini_overrides") if apply_recommendations else None
             if enable_fsr4:
-                managed_files = self._install_fsr4_bundle(
-                    target_dir,
-                    quirks.get("recommended_optiscaler_ini_overrides"),
-                )
+                managed_files = self._install_fsr4_bundle(target_dir, config_overrides)
                 self._log(f"patch installed fsr4 bundle: {json.dumps(managed_files, sort_keys=True)}")
 
-            marker_path = target_dir / self._marker_filename(normalized_method)
+            marker_path = target_dir / self._marker_filename(effective_method)
             self._write_marker_metadata(
                 marker_path,
                 appid=str(appid),
                 game_name=game_info["name"],
-                method=normalized_method,
+                method=effective_method,
                 target_dir=target_dir,
                 target_exe=target_exe,
                 original_launch_options=original_launch_options,
@@ -1248,15 +1259,15 @@ class Plugin:
             )
             self._log(f"patch wrote marker: {json.dumps(self._read_marker_metadata(marker_path), sort_keys=True)}")
 
-            managed_launch_options = self._build_managed_launch_options(normalized_method)
+            managed_launch_options = self._build_managed_launch_options(effective_method)
             self._log(f"patch managed launch options: {json.dumps(managed_launch_options)}")
 
             result = {
                 "status": "success",
                 "appid": str(appid),
                 "name": game_info["name"],
-                "method": normalized_method,
-                "proxy_filename": f"{normalized_method}.dll",
+                "method": effective_method,
+                "proxy_filename": f"{effective_method}.dll",
                 "marker_name": marker_path.name,
                 "bundled_asset_version": DLSS_ENABLER_VERSION,
                 "bundled_asset_sha256": BUNDLED_ASSET_SHA256,
@@ -1266,9 +1277,9 @@ class Plugin:
                 "launch_options": managed_launch_options,
                 "original_launch_options": original_launch_options,
                 "message": (
-                    f"Patched {game_info['name']} using {normalized_method}.dll with {FSR4_INT8_BUNDLE['label']} sidecar files."
+                    f"Patched {game_info['name']} using {effective_method}.dll with {FSR4_INT8_BUNDLE['label']} sidecar files."
                     if enable_fsr4
-                    else f"Patched {game_info['name']} using {normalized_method}.dll in the game directory."
+                    else f"Patched {game_info['name']} using {effective_method}.dll in the game directory."
                 ),
                 "paths": {
                     "install_root": str(install_root),
@@ -1278,7 +1289,7 @@ class Plugin:
                     "marker": str(marker_path),
                 },
             }
-            self._log_target_state("patch success final state", target_dir, normalized_method)
+            self._log_target_state("patch success final state", target_dir, effective_method)
             self._log(f"patch success: {json.dumps(result, sort_keys=True)}")
             return result
         except Exception as exc:
