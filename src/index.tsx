@@ -51,6 +51,11 @@ type GameStatusResponse = {
   fsr4_files_complete?: boolean;
   fsr4_integrity_ok?: boolean | null;
   fsr4_reinstall_recommended?: boolean;
+  recommended_method?: string | null;
+  recommendation_source?: string | null;
+  recommendation_wiki_url?: string | null;
+  recommendation_notes?: string[];
+  recommended_optiscaler_ini_overrides?: Record<string, Record<string, string>>;
   paths?: {
     install_root?: string;
     target_dir?: string;
@@ -240,6 +245,17 @@ function Content() {
     () => METHOD_OPTIONS.find((entry) => entry.value === selectedMethod)?.label ?? `${selectedMethod}.dll`,
     [selectedMethod],
   );
+  const recommendedMethodLabel = useMemo(
+    () => (status?.recommended_method
+      ? (METHOD_OPTIONS.find((entry) => entry.value === status.recommended_method)?.label ?? `${status.recommended_method}.dll`)
+      : "—"),
+    [status?.recommended_method],
+  );
+  const hasRecommendation = Boolean(
+    status?.recommended_method ||
+    status?.recommendation_source ||
+    (status?.recommendation_notes && status.recommendation_notes.length),
+  );
 
   const canPatch = Boolean(selectedGame && status?.status === "success" && status.prefix_exists && !busyAction);
   const canUnpatch = Boolean(selectedGame && status?.status === "success" && status.marker_name && !busyAction);
@@ -311,6 +327,12 @@ function Content() {
       setBusyAction(null);
     }
   }, [loadStatus, selectedAppId, selectedGame]);
+
+  const handleUseRecommendedMethod = useCallback(() => {
+    if (!status?.recommended_method) return;
+    lastSelectedMethod = status.recommended_method;
+    setSelectedMethod(status.recommended_method);
+  }, [status?.recommended_method]);
 
   const versionDisplay = useMemo(() => {
     if (!selectedGame || status?.status !== "success" || !status.patched) {
@@ -410,6 +432,46 @@ function Content() {
         </Field>
       </PanelSectionRow>
 
+      {hasRecommendation ? (
+        <PanelSectionRow>
+          <Field label="Recommended DLL name">
+            {status?.recommended_method ? (
+              <span
+                style={{
+                  color: status.recommended_method === selectedMethod ? "#3fb950" : undefined,
+                  fontWeight: status.recommended_method === selectedMethod ? 600 : undefined,
+                }}
+              >
+                {recommendedMethodLabel}
+              </span>
+            ) : "—"}
+          </Field>
+        </PanelSectionRow>
+      ) : null}
+
+      {status?.recommendation_source ? (
+        <PanelSectionRow>
+          <Field label="Recommendation source">
+            <div>
+              <div>{status.recommendation_source}</div>
+              {status.recommendation_wiki_url ? <div>{status.recommendation_wiki_url}</div> : null}
+            </div>
+          </Field>
+        </PanelSectionRow>
+      ) : null}
+
+      {status?.recommendation_notes?.length ? (
+        <PanelSectionRow>
+          <Field label="Recommendation notes">
+            <div>
+              {status.recommendation_notes.map((note, index) => (
+                <div key={`${note}-${index}`}>• {note}</div>
+              ))}
+            </div>
+          </Field>
+        </PanelSectionRow>
+      ) : null}
+
       <PanelSectionRow>
         <Field label="DLSS Enabler version">
           {versionDisplay.color ? (
@@ -470,6 +532,18 @@ function Content() {
           {selectedMethodLabel}
         </Field>
       </PanelSectionRow>
+
+      {status?.recommended_method ? (
+        <PanelSectionRow>
+          <ButtonItem
+            layout="below"
+            onClick={handleUseRecommendedMethod}
+            disabled={!selectedGame || busyAction !== null || selectedMethod === status.recommended_method}
+          >
+            Use recommended DLL name ({recommendedMethodLabel})
+          </ButtonItem>
+        </PanelSectionRow>
+      ) : null}
 
       <PanelSectionRow>
         <DropdownItem

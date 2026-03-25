@@ -140,16 +140,104 @@ class Plugin:
     def _bundled_sidecar_asset_path(self, asset_name: str) -> Path:
         return self._plugin_bin_dir() / asset_name
 
-    def _fsr4_config_contents(self) -> str:
-        return (
-            "; Managed by Decky DLSS Enabler\n"
-            "; Experimental FSR4 INT8 sidecar support\n\n"
-            "[FSR]\n"
-            "Fsr4Update=true\n"
-            "FsrAgilitySDKUpgrade=auto\n\n"
-            "[Upscalers]\n"
-            "Dx12Upscaler=fsr31\n"
-        )
+    def _quirks_db_path(self) -> Path:
+        return Path(__file__).parent / "py_modules" / "quirks_db.json"
+
+    def _load_quirks_db(self) -> dict:
+        return self._read_json_file(self._quirks_db_path())
+
+    def _normalized_optiscaler_ini_overrides(self, overrides: dict | None) -> dict[str, dict[str, str]]:
+        normalized: dict[str, dict[str, str]] = {}
+        if not isinstance(overrides, dict):
+            return normalized
+
+        for section_name, section_values in overrides.items():
+            normalized_section = str(section_name).strip().strip("[]")
+            if not normalized_section or not isinstance(section_values, dict):
+                continue
+
+            normalized_values: dict[str, str] = {}
+            for key, value in section_values.items():
+                normalized_key = str(key).strip()
+                if not normalized_key:
+                    continue
+                normalized_values[normalized_key] = str(value).strip()
+
+            if normalized_values:
+                normalized[normalized_section] = normalized_values
+
+        return normalized
+
+    def _game_quirks(self, appid: str, game_name: str | None = None) -> dict | None:
+        del game_name
+        quirks_db = self._load_quirks_db()
+        games = quirks_db.get("games") if isinstance(quirks_db, dict) else None
+        if not isinstance(games, dict):
+            return None
+
+        entry = games.get(str(appid))
+        return entry if isinstance(entry, dict) else None
+
+    def _game_quirks_payload(self, appid: str, game_name: str | None = None) -> dict:
+        entry = self._game_quirks(appid, game_name)
+        if not entry:
+            return {
+                "recommended_method": None,
+                "recommendation_source": None,
+                "recommendation_wiki_url": None,
+                "recommendation_notes": [],
+                "recommended_optiscaler_ini_overrides": {},
+            }
+
+        recommended_method = None
+        try:
+            if entry.get("recommended_method"):
+                recommended_method = self._normalize_method(str(entry.get("recommended_method")))
+        except Exception:
+            recommended_method = None
+
+        notes = [
+            str(note).strip()
+            for note in (entry.get("notes") or [])
+            if str(note).strip()
+        ]
+
+        return {
+            "recommended_method": recommended_method,
+            "recommendation_source": str(entry.get("source") or "") or None,
+            "recommendation_wiki_url": str(entry.get("source_url") or "") or None,
+            "recommendation_notes": notes,
+            "recommended_optiscaler_ini_overrides": self._normalized_optiscaler_ini_overrides(
+                entry.get("recommended_optiscaler_ini_overrides")
+            ),
+        }
+
+    def _fsr4_config_contents(self, overrides: dict[str, dict[str, str]] | None = None) -> str:
+        sections: dict[str, dict[str, str]] = {
+            "FSR": {
+                "Fsr4Update": "true",
+                "FsrAgilitySDKUpgrade": "auto",
+            },
+            "Upscalers": {
+                "Dx12Upscaler": "fsr31",
+            },
+        }
+
+        for section_name, section_values in self._normalized_optiscaler_ini_overrides(overrides).items():
+            sections.setdefault(section_name, {}).update(section_values)
+
+        lines = [
+            "; Managed by Decky DLSS Enabler",
+            "; Experimental FSR4 INT8 sidecar support",
+            "",
+        ]
+        for section_name, section_values in sections.items():
+            lines.append(f"[{section_name}]")
+            for key, value in section_values.items():
+                lines.append(f"{key}={value}")
+            lines.append("")
+
+        return "\n".join(lines).rstrip() + "\n"
 
     def _bytes_sha256(self, payload: bytes) -> str:
         digest = hashlib.sha256()
@@ -686,7 +774,7 @@ class Plugin:
             "fsr4_managed_files": installed_files,
         }
 
-    def _install_fsr4_bundle(self, target_dir: Path) -> list[dict]:
+    def _install_fsr4_bundle(self, target_dir: Path, config_overrides: dict[str, dict[str, str]] | None = None) -> list[dict]:
         verified_assets = self._verify_fsr4_bundle_assets()
         managed_files: list[dict] = []
 
@@ -711,10 +799,11 @@ class Plugin:
             )
 
         config_path = target_dir / FSR4_CONFIG_FILENAME
-        config_bytes = self._fsr4_config_contents().encode("utf-8")
+        config_text = self._fsr4_config_contents(config_overrides)
+        config_bytes = config_text.encode("utf-8")
         config_sha256 = self._bytes_sha256(config_bytes)
         config_backup_created = self._prepare_managed_file(config_path, config_sha256)
-        config_path.write_text(self._fsr4_config_contents(), encoding="utf-8")
+        config_path.write_text(config_text, encoding="utf-8")
         written_config_sha256 = self._file_sha256(config_path)
         if written_config_sha256.lower() != config_sha256.lower():
             raise RuntimeError(
@@ -922,6 +1011,7 @@ class Plugin:
             self._log(f"get_game_status start: appid={appid}")
             game_info = self._game_record(str(appid))
             game_name = game_info["name"] if game_info else str(appid)
+            quirks = self._game_quirks_payload(str(appid), game_name)
             if not game_info:
                 return {
                     "status": "success",
@@ -932,6 +1022,7 @@ class Plugin:
                     "method": None,
                     "proxy_filename": None,
                     "message": "Game install path could not be resolved.",
+                    **quirks,
                 }
 
             install_root = Path(game_info["install_path"])
@@ -948,6 +1039,7 @@ class Plugin:
                     "paths": {
                         "install_root": str(install_root),
                     },
+                    **quirks,
                 }
 
             target_dir, target_exe = self._guess_patch_target(game_info)
@@ -968,6 +1060,7 @@ class Plugin:
                         "target_dir": str(target_dir),
                         "target_exe": str(target_exe) if target_exe else "",
                     },
+                    **quirks,
                 }
 
             marker = markers[0]
@@ -1035,6 +1128,7 @@ class Plugin:
                     "target_dir": str(target_dir),
                     "target_exe": str(metadata.get("target_exe") or ""),
                 },
+                **quirks,
             }
         except Exception as exc:
             self._log(f"get_game_status failed for {appid}: {exc}")
@@ -1086,9 +1180,14 @@ class Plugin:
                     f"Copied proxy hash mismatch for {target_proxy_path.name}: expected {BUNDLED_ASSET_SHA256}, got {copied_hash}"
                 )
 
+            quirks = self._game_quirks_payload(str(appid), game_info["name"])
+
             managed_files: list[dict] = []
             if enable_fsr4:
-                managed_files = self._install_fsr4_bundle(target_dir)
+                managed_files = self._install_fsr4_bundle(
+                    target_dir,
+                    quirks.get("recommended_optiscaler_ini_overrides"),
+                )
                 self._log(f"patch installed fsr4 bundle: {json.dumps(managed_files, sort_keys=True)}")
 
             marker_path = target_dir / self._marker_filename(normalized_method)

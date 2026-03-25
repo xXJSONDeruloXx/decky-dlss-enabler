@@ -344,6 +344,31 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.assertEqual(marker["asset_version"], plugin_main.DLSS_ENABLER_VERSION)
         self.assertEqual(marker["original_launch_options"], "MANGOHUD=1 %command% -windowed")
 
+    def test_get_game_status_includes_recommended_method_for_unpatched_game(self):
+        with mock.patch.object(
+            self.plugin,
+            "_load_quirks_db",
+            return_value={
+                "games": {
+                    "123": {
+                        "source": "OptiScaler wiki",
+                        "source_url": "https://example.invalid/wiki/Test-Game",
+                        "recommended_method": "dxgi",
+                        "notes": ["Use dxgi.dll for this game."],
+                        "recommended_optiscaler_ini_overrides": {},
+                    }
+                }
+            },
+        ):
+            result = self.run_async(self.plugin.get_game_status("123"))
+
+        self.assertEqual(result["status"], "success")
+        self.assertFalse(result["patched"])
+        self.assertEqual(result["recommended_method"], "dxgi")
+        self.assertEqual(result["recommendation_source"], "OptiScaler wiki")
+        self.assertEqual(result["recommendation_wiki_url"], "https://example.invalid/wiki/Test-Game")
+        self.assertEqual(result["recommendation_notes"], ["Use dxgi.dll for this game."])
+
     def test_patch_game_with_fsr4_installs_sidecar_files_and_config(self):
         result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True))
 
@@ -361,6 +386,30 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.assertTrue(marker["fsr4_enabled"])
         self.assertEqual(marker["fsr4_bundle_id"], self.fake_fsr4_bundle["id"])
         self.assertEqual(len(marker["managed_files"]), 4)
+
+    def test_patch_game_with_fsr4_applies_game_specific_ini_overrides(self):
+        with mock.patch.object(
+            self.plugin,
+            "_load_quirks_db",
+            return_value={
+                "games": {
+                    "123": {
+                        "recommended_method": "dxgi",
+                        "recommended_optiscaler_ini_overrides": {
+                            "FrameGeneration": {
+                                "Reflex": "on",
+                            }
+                        },
+                    }
+                }
+            },
+        ):
+            result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True))
+
+        self.assertEqual(result["status"], "success")
+        config_text = (self.target_dir / plugin_main.FSR4_CONFIG_FILENAME).read_text(encoding="utf-8")
+        self.assertIn("[FrameGeneration]", config_text)
+        self.assertIn("Reflex=on", config_text)
 
     def test_unpatch_restores_previous_fsr4_sidecar_files(self):
         original_loader = self.target_dir / "amd_fidelityfx_dx12.dll"

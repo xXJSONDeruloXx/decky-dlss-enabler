@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "games": {
+    "3489700": {
+      "steam_name": "Stellar Blade™",
+      "wiki_slug": "Stellar-Blade",
+      "source": "OptiScaler wiki",
+      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Stellar-Blade",
+      "recommended_method": "dxgi",
+      "recommended_optiscaler_ini_overrides": {},
+      "notes": [
+        "OptiScaler wiki recommends dxgi.dll for Stellar Blade.",
+        "Game may crash on first boot, but works fine afterwards."
+      ]
+    }
+  }
+}
