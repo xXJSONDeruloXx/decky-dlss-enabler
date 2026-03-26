@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import importlib
 import json
+import struct
 import sys
 import tempfile
 import types
@@ -395,6 +396,296 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.assertTrue(status["fsr4_files_present"])
         self.assertTrue(status["fsr4_files_complete"])
         self.assertFalse(status["fsr4_reinstall_recommended"])
+
+
+def _build_shortcuts_vdf(entries: list[dict]) -> bytes:
+    buf = bytearray()
+    buf += b"\x00shortcuts\x00"
+    for idx, entry in enumerate(entries):
+        buf += b"\x00"
+        buf += str(idx).encode("utf-8") + b"\x00"
+        for key, value in entry.items():
+            if isinstance(value, int):
+                buf += b"\x02"
+                buf += key.encode("utf-8") + b"\x00"
+                buf += struct.pack("<i", value)
+            elif isinstance(value, str):
+                buf += b"\x01"
+                buf += key.encode("utf-8") + b"\x00"
+                buf += value.encode("utf-8") + b"\x00"
+        buf += b"\x08"
+    buf += b"\x08"
+    return bytes(buf)
+
+
+class ShortcutsVdfParserTests(unittest.TestCase):
+    def setUp(self):
+        self.plugin = plugin_main.Plugin()
+        self.plugin._log = lambda message: None
+
+    def test_parse_single_shortcut(self):
+        vdf_bytes = _build_shortcuts_vdf([
+            {
+                "appid": -1794566195,
+                "AppName": "My Non-Steam Game",
+                "exe": '"/games/MyGame/game.exe"',
+                "StartDir": '"/games/MyGame"',
+                "LaunchOptions": "",
+            }
+        ])
+        with tempfile.NamedTemporaryFile(suffix=".vdf", delete=False) as f:
+            f.write(vdf_bytes)
+            vdf_path = Path(f.name)
+
+        try:
+            results = self.plugin._parse_shortcuts_vdf(vdf_path)
+            self.assertEqual(len(results), 1)
+            self.assertEqual(results[0]["appname"], "My Non-Steam Game")
+            self.assertEqual(results[0]["appid"], -1794566195)
+            self.assertEqual(results[0]["exe"], "/games/MyGame/game.exe")
+            self.assertEqual(results[0]["start_dir"], "/games/MyGame")
+        finally:
+            vdf_path.unlink()
+
+    def test_parse_multiple_shortcuts(self):
+        vdf_bytes = _build_shortcuts_vdf([
+            {
+                "appid": -100,
+                "AppName": "Game A",
+                "exe": '"/opt/a/game.exe"',
+                "StartDir": '"/opt/a"',
+            },
+            {
+                "appid": -200,
+                "AppName": "Game B",
+                "exe": '"/opt/b/game.exe"',
+                "StartDir": '"/opt/b"',
+            },
+        ])
+        with tempfile.NamedTemporaryFile(suffix=".vdf", delete=False) as f:
+            f.write(vdf_bytes)
+            vdf_path = Path(f.name)
+
+        try:
+            results = self.plugin._parse_shortcuts_vdf(vdf_path)
+            self.assertEqual(len(results), 2)
+            self.assertEqual(results[0]["appname"], "Game A")
+            self.assertEqual(results[1]["appname"], "Game B")
+        finally:
+            vdf_path.unlink()
+
+    def test_parse_empty_file(self):
+        with tempfile.NamedTemporaryFile(suffix=".vdf", delete=False) as f:
+            f.write(b"\x00shortcuts\x00\x08")
+            vdf_path = Path(f.name)
+
+        try:
+            results = self.plugin._parse_shortcuts_vdf(vdf_path)
+            self.assertEqual(results, [])
+        finally:
+            vdf_path.unlink()
+
+    def test_parse_skips_entry_without_appid(self):
+        vdf_bytes = _build_shortcuts_vdf([
+            {"AppName": "No AppID Game", "exe": "/foo/bar.exe", "StartDir": "/foo"},
+        ])
+        with tempfile.NamedTemporaryFile(suffix=".vdf", delete=False) as f:
+            f.write(vdf_bytes)
+            vdf_path = Path(f.name)
+
+        try:
+            results = self.plugin._parse_shortcuts_vdf(vdf_path)
+            self.assertEqual(results, [])
+        finally:
+            vdf_path.unlink()
+
+
+class ShortcutGameDiscoveryTests(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.root = Path(self.tempdir.name)
+        self.steam_root = self.root / ".local" / "share" / "Steam"
+        self.userdata_dir = self.steam_root / "userdata" / "12345" / "config"
+        self.userdata_dir.mkdir(parents=True)
+
+        self.game_dir = self.root / "games" / "MyGame"
+        self.game_dir.mkdir(parents=True)
+        (self.game_dir / "game.exe").write_bytes(b"exe")
+
+        self.plugin = plugin_main.Plugin()
+        self.plugin._log = lambda message: None
+        self.plugin._home_path = lambda: self.root
+
+    def tearDown(self):
+        self.tempdir.cleanup()
+
+    def _write_shortcuts(self, entries: list[dict]) -> None:
+        vdf_bytes = _build_shortcuts_vdf(entries)
+        (self.userdata_dir / "shortcuts.vdf").write_bytes(vdf_bytes)
+
+    def test_find_shortcut_games_returns_games_from_vdf(self):
+        self._write_shortcuts([
+            {
+                "appid": -1794566195,
+                "AppName": "My Non-Steam Game",
+                "exe": f'"{self.game_dir / "game.exe"}"',
+                "StartDir": f'"{self.game_dir}"',
+            }
+        ])
+
+        games = self.plugin._find_shortcut_games()
+        self.assertEqual(len(games), 1)
+        self.assertEqual(games[0]["name"], "My Non-Steam Game")
+        unsigned_appid = str(-1794566195 & 0xFFFFFFFF)
+        self.assertEqual(games[0]["appid"], unsigned_appid)
+        self.assertEqual(games[0]["install_path"], str(self.game_dir))
+        self.assertTrue(games[0]["is_shortcut"])
+
+    def test_find_shortcut_games_filters_by_appid(self):
+        self._write_shortcuts([
+            {
+                "appid": -100,
+                "AppName": "Game A",
+                "exe": '"/opt/a/game.exe"',
+                "StartDir": '"/opt/a"',
+            },
+            {
+                "appid": -200,
+                "AppName": "Game B",
+                "exe": '"/opt/b/game.exe"',
+                "StartDir": '"/opt/b"',
+            },
+        ])
+
+        target_appid = str(-100 & 0xFFFFFFFF)
+        games = self.plugin._find_shortcut_games(target_appid)
+        self.assertEqual(len(games), 1)
+        self.assertEqual(games[0]["name"], "Game A")
+
+    def test_find_shortcut_games_empty_when_no_vdf(self):
+        games = self.plugin._find_shortcut_games()
+        self.assertEqual(games, [])
+
+    def test_find_shortcut_games_falls_back_to_exe_parent(self):
+        self._write_shortcuts([
+            {
+                "appid": -500,
+                "AppName": "No StartDir Game",
+                "exe": f'"{self.game_dir / "game.exe"}"',
+                "StartDir": "",
+            }
+        ])
+
+        games = self.plugin._find_shortcut_games()
+        self.assertEqual(len(games), 1)
+        self.assertEqual(games[0]["install_path"], str(self.game_dir))
+
+    def test_game_record_falls_back_to_shortcut(self):
+        self._write_shortcuts([
+            {
+                "appid": -1794566195,
+                "AppName": "Shortcut Game",
+                "exe": f'"{self.game_dir / "game.exe"}"',
+                "StartDir": f'"{self.game_dir}"',
+            }
+        ])
+
+        unsigned_appid = str(-1794566195 & 0xFFFFFFFF)
+        record = self.plugin._game_record(unsigned_appid)
+        self.assertIsNotNone(record)
+        self.assertEqual(record["name"], "Shortcut Game")
+        self.assertEqual(record["install_path"], str(self.game_dir))
+
+    def test_list_installed_games_includes_shortcuts(self):
+        steamapps = self.steam_root / "steamapps"
+        steamapps.mkdir(parents=True, exist_ok=True)
+        (steamapps / "libraryfolders.vdf").write_text(
+            '"libraryfolders"\n{\n}\n', encoding="utf-8"
+        )
+
+        self._write_shortcuts([
+            {
+                "appid": -1794566195,
+                "AppName": "Shortcut Game",
+                "exe": f'"{self.game_dir / "game.exe"}"',
+                "StartDir": f'"{self.game_dir}"',
+            }
+        ])
+
+        result = asyncio.run(self.plugin.list_installed_games())
+        self.assertEqual(result["status"], "success")
+        shortcut_games = [g for g in result["games"] if g.get("is_shortcut")]
+        self.assertEqual(len(shortcut_games), 1)
+        self.assertEqual(shortcut_games[0]["name"], "Shortcut Game")
+        self.assertTrue(shortcut_games[0]["is_shortcut"])
+
+
+class ShortcutPatchFlowTests(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.root = Path(self.tempdir.name)
+
+        self.game_dir = self.root / "games" / "MyGame"
+        self.target_dir = self.game_dir / "Binaries" / "Win64"
+        self.target_dir.mkdir(parents=True)
+        self.exe_path = self.target_dir / "MyGame-Win64-Shipping.exe"
+        self.exe_path.write_bytes(b"exe")
+
+        self.asset_path = self.root / plugin_main.BUNDLED_ASSET_NAME
+        self.asset_bytes = b"fake bundled dlss enabler dll"
+        self.asset_path.write_bytes(self.asset_bytes)
+        self.asset_hash = hashlib.sha256(self.asset_bytes).hexdigest()
+
+        self.sidecar_dir = self.root / "bin"
+        self.sidecar_dir.mkdir()
+        (self.sidecar_dir / "amd_fidelityfx_dx12.dll").write_bytes(b"loader")
+        (self.sidecar_dir / "amd_fidelityfx_upscaler_dx12.dll").write_bytes(b"upscaler")
+
+        self.shortcut_appid = str(-1794566195 & 0xFFFFFFFF)
+
+        self.plugin = PluginUnderTest(
+            appid=self.shortcut_appid,
+            name="My Non-Steam Game",
+            install_root=self.game_dir,
+            asset_path=self.asset_path,
+            sidecar_dir=self.sidecar_dir,
+        )
+
+        self.hash_patch = mock.patch.object(plugin_main, "BUNDLED_ASSET_SHA256", self.asset_hash)
+        self.hash_patch.start()
+
+    def tearDown(self):
+        self.hash_patch.stop()
+        self.tempdir.cleanup()
+
+    def run_async(self, coro):
+        return asyncio.run(coro)
+
+    def test_patch_shortcut_game(self):
+        result = self.run_async(self.plugin.patch_game(self.shortcut_appid, "dxgi", ""))
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["appid"], self.shortcut_appid)
+        self.assertEqual(result["launch_options"], "WINEDLLOVERRIDES=dxgi=n,b SteamDeck=0 %command%")
+
+        proxy_path = self.target_dir / "dxgi.dll"
+        self.assertTrue(proxy_path.exists())
+        self.assertEqual(proxy_path.read_bytes(), self.asset_bytes)
+
+    def test_unpatch_shortcut_game(self):
+        patch_result = self.run_async(self.plugin.patch_game(self.shortcut_appid, "dxgi", "MANGOHUD=1 %command%"))
+        self.assertEqual(patch_result["status"], "success")
+
+        unpatch_result = self.run_async(self.plugin.unpatch_game(self.shortcut_appid))
+        self.assertEqual(unpatch_result["status"], "success")
+        self.assertEqual(unpatch_result["launch_options"], "MANGOHUD=1 %command%")
+        self.assertFalse((self.target_dir / "dxgi.dll").exists())
+
+    def test_get_status_shortcut_game(self):
+        self.run_async(self.plugin.patch_game(self.shortcut_appid, "dxgi", ""))
+        status = self.run_async(self.plugin.get_game_status(self.shortcut_appid))
+        self.assertEqual(status["status"], "success")
+        self.assertTrue(status["patched"])
+        self.assertEqual(status["method"], "dxgi")
 
 
 if __name__ == "__main__":

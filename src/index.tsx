@@ -14,6 +14,7 @@ type GameInfo = {
   appid: string;
   name: string;
   prefix_exists: boolean;
+  is_shortcut?: boolean;
 };
 
 type GameListResponse = {
@@ -365,14 +366,15 @@ function Content() {
       <PanelSectionRow>
         <DropdownItem
           label="Target game"
-          menuLabel="Installed Steam games"
+          menuLabel="Installed games"
           strDefaultLabel={gamesLoading ? "Loading installed games..." : "Choose a game"}
           disabled={gamesLoading || games.length === 0}
           selectedOption={selectedAppId}
-          rgOptions={games.map((game) => ({
-            data: game.appid,
-            label: game.prefix_exists ? game.name : `${game.name} (target not found)`,
-          }))}
+          rgOptions={games.map((game) => {
+            const suffix = game.is_shortcut ? " [Non-Steam]" : "";
+            const notFound = game.prefix_exists ? "" : " (target not found)";
+            return { data: game.appid, label: `${game.name}${notFound}${suffix}` };
+          })}
           onChange={(option) => {
             const nextAppId = String(option.data);
             lastSelectedAppId = nextAppId;
