@@ -201,15 +201,30 @@ class Plugin:
                 seen.add(normalized)
         return normalized_candidates
 
+    def _entry_steam_appids(self, entry: dict) -> set[str]:
+        appids: set[str] = set()
+        for value in entry.get("steam_appids") or []:
+            normalized = str(value).strip()
+            if normalized:
+                appids.add(normalized)
+        return appids
+
     def _game_quirks(self, appid: str, game_name: str | None = None) -> dict | None:
         quirks_db = self._load_quirks_db()
         games = quirks_db.get("games") if isinstance(quirks_db, dict) else None
         if not isinstance(games, dict):
             return None
 
-        entry = games.get(str(appid))
+        normalized_appid = str(appid).strip()
+        entry = games.get(normalized_appid)
         if isinstance(entry, dict):
             return entry
+
+        for entry_value in games.values():
+            if not isinstance(entry_value, dict):
+                continue
+            if normalized_appid and normalized_appid in self._entry_steam_appids(entry_value):
+                return entry_value
 
         normalized_game_name = self._normalize_game_name(game_name)
         if not normalized_game_name:

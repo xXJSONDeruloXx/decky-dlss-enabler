@@ -385,6 +385,31 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.assertEqual(result["recommended_method"], "dxgi")
         self.assertEqual(result["recommendation_notes"], ["Name-based match works."])
 
+    def test_get_game_status_matches_slug_keyed_entry_by_steam_appid_field(self):
+        with mock.patch.object(
+            self.plugin,
+            "_load_quirks_db",
+            return_value={
+                "games": {
+                    "test-game": {
+                        "steam_name": "Completely Different Name",
+                        "wiki_slug": "Test-Game",
+                        "steam_appids": [123],
+                        "source": "OptiScaler wiki",
+                        "source_url": "https://example.invalid/wiki/Test-Game",
+                        "recommended_method": "dxgi",
+                        "notes": ["Steam appid match works."],
+                        "recommended_optiscaler_ini_overrides": {},
+                    }
+                }
+            },
+        ):
+            result = self.run_async(self.plugin.get_game_status("123"))
+
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["recommended_method"], "dxgi")
+        self.assertEqual(result["recommendation_notes"], ["Steam appid match works."])
+
     def test_patch_game_with_fsr4_installs_sidecar_files_and_config(self):
         result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True))
 

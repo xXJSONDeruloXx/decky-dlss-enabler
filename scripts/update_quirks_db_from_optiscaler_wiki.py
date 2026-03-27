@@ -164,6 +164,7 @@ def _parse_page(path: Path) -> dict | None:
 
     return {
         "steam_name": _slug_to_display_name(path.stem),
+        "steam_appids": [],
         "wiki_slug": path.stem,
         "source": "OptiScaler wiki",
         "source_url": f"https://github.com/optiscaler/OptiScaler/wiki/{path.stem}",
@@ -198,6 +199,7 @@ def _merged_entry(parsed_entry: dict, existing_entry: dict | None) -> dict:
 
     for field in [
         "steam_name",
+        "steam_appids",
         "aliases",
         "recommended_optiscaler_ini_overrides",
         "notes",

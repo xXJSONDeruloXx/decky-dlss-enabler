@@ -12,6 +12,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/171",
+      "steam_appids": [
+        1269370
+      ],
       "steam_name": "171",
       "wiki_slug": "171"
     },
@@ -27,6 +30,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Stellar-Blade",
+      "steam_appids": [
+        3489700
+      ],
       "steam_name": "Stellar Blade\u2122",
       "wiki_slug": "Stellar-Blade"
     },
@@ -49,6 +55,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/7-Days-to-Die",
+      "steam_appids": [
+        251570
+      ],
       "steam_name": "7 Days to Die",
       "wiki_slug": "7-Days-to-Die"
     },
@@ -63,6 +72,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/A-Plague-Tale-Requiem",
+      "steam_appids": [
+        1182900
+      ],
       "steam_name": "A Plague Tale Requiem",
       "wiki_slug": "A-Plague-Tale-Requiem"
     },
@@ -79,25 +91,11 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/AI-Limit",
+      "steam_appids": [
+        2407270
+      ],
       "steam_name": "AI Limit",
       "wiki_slug": "AI-Limit"
-    },
-    "Alan-Wake-II": {
-      "notes": [
-        "FSR2 cannot be hooked, DLSS inputs are required.",
-        "If game is crashing during startup, try disabling the Epic Games Store overlay by: Setting DisableOverlays=true at OptiScaler.ini or Renaming these two files located at C:\\Program Files (x86)\\Epic Games\\Launcher\\Portal\\Extras\\Overlay to any other name: EOSOverlayRenderer-Win64-Shipping.exe EOSOverlayRenderer-Win32-Shipping.exe",
-        "To reduce ghosting, you need to disable lens distortion in the game's configuration file located at %LOCALAPPDATA%\\Remedy\\AlanWake2\\renderer.ini by setting the following \"m_bLensDistortion\": false,",
-        "The wiki's DisableOverlays=true recommendation is a startup-crash workaround tied to the Epic overlay, so it is kept as a note rather than auto-applied."
-      ],
-      "recommended_method": "dxgi",
-      "recommended_methods": [
-        "dxgi"
-      ],
-      "recommended_optiscaler_ini_overrides": {},
-      "source": "OptiScaler wiki",
-      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Alan-Wake-II",
-      "steam_name": "Alan Wake II",
-      "wiki_slug": "Alan-Wake-II"
     },
     "Alien-Rogue-Incursion-Evolved-Edition": {
       "notes": [
@@ -113,28 +111,11 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Alien-Rogue-Incursion-Evolved-Edition",
+      "steam_appids": [
+        3655390
+      ],
       "steam_name": "Alien Rogue Incursion Evolved Edition",
       "wiki_slug": "Alien-Rogue-Incursion-Evolved-Edition"
-    },
-    "Arknights-Endfield": {
-      "notes": [
-        "OptiScaler wiki lists multiple compatible DLL names: d3d12.dll, winhttp.dll, winmm.dll.",
-        "Enabling Reflex on AMD/Intel will crash the game. Nukem's DLSSG requires setting OverrideNvapiDll=false to not crash in Vulkan _(automatic since 0.9-pre10)_.",
-        "Linux users may need to set UseNtdllHooks=false for upscaler inputs to be hooked.",
-        "Upscalers disengage when opening menus and re-engage when closing them, resulting in noticeable stutter. |Notes|",
-        "The wiki's OverrideNvapiDll=false recommendation is specific to Nukem's DLSSG on the Vulkan path and is noted as automatic in newer OptiScaler versions, so it is not auto-applied here."
-      ],
-      "recommended_method": null,
-      "recommended_methods": [
-        "d3d12",
-        "winhttp",
-        "winmm"
-      ],
-      "recommended_optiscaler_ini_overrides": {},
-      "source": "OptiScaler wiki",
-      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Arknights-Endfield",
-      "steam_name": "Arknights Endfield",
-      "wiki_slug": "Arknights-Endfield"
     },
     "Assassins-Creed-Mirage": {
       "notes": [
@@ -155,6 +136,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Assassins-Creed-Mirage",
+      "steam_appids": [
+        3035570
+      ],
       "steam_name": "Assassins Creed Mirage",
       "wiki_slug": "Assassins-Creed-Mirage"
     },
@@ -171,6 +155,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Assassins-Creed-Shadows",
+      "steam_appids": [
+        3159330
+      ],
       "steam_name": "Assassins Creed Shadows",
       "wiki_slug": "Assassins-Creed-Shadows"
     },
@@ -185,6 +172,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Assetto-Corsa-Rally",
+      "steam_appids": [
+        3917090
+      ],
       "steam_name": "Assetto Corsa Rally",
       "wiki_slug": "Assetto-Corsa-Rally"
     },
@@ -203,6 +193,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Asterigos-Curse-of-the-Stars",
+      "steam_appids": [
+        1731070
+      ],
       "steam_name": "Asterigos Curse of the Stars",
       "wiki_slug": "Asterigos-Curse-of-the-Stars"
     },
@@ -218,6 +211,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Atelier-Yumia-The-Alchemist-of-Memories-&-the-Envisioned-Land",
+      "steam_appids": [
+        3123410
+      ],
       "steam_name": "Atelier Yumia The Alchemist of Memories & the Envisioned Land",
       "wiki_slug": "Atelier-Yumia-The-Alchemist-of-Memories-&-the-Envisioned-Land"
     },
@@ -232,6 +228,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Atlas-Fallen-Reign-Of-Sand",
+      "steam_appids": [
+        1230530
+      ],
       "steam_name": "Atlas Fallen Reign Of Sand",
       "wiki_slug": "Atlas-Fallen-Reign-Of-Sand"
     },
@@ -250,6 +249,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Avatar-Frontiers-of-Pandora",
+      "steam_appids": [
+        2840770
+      ],
       "steam_name": "Avatar Frontiers of Pandora",
       "wiki_slug": "Avatar-Frontiers-of-Pandora"
     },
@@ -270,6 +272,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Avowed",
+      "steam_appids": [
+        2457220
+      ],
       "steam_name": "Avowed",
       "wiki_slug": "Avowed"
     },
@@ -285,6 +290,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Banishers-Ghosts-of-New-Eden",
+      "steam_appids": [
+        1493640
+      ],
       "steam_name": "Banishers Ghosts of New Eden",
       "wiki_slug": "Banishers-Ghosts-of-New-Eden"
     },
@@ -311,6 +319,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Black-Myth-Wukong",
+      "steam_appids": [
+        2358720
+      ],
       "steam_name": "Black Myth Wukong",
       "wiki_slug": "Black-Myth-Wukong"
     },
@@ -334,26 +345,11 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Borderlands-4",
+      "steam_appids": [
+        1285190
+      ],
       "steam_name": "Borderlands 4",
       "wiki_slug": "Borderlands-4"
-    },
-    "Capcom-RE-engine-games": {
-      "notes": [
-        "Capcom RE games in general require REFramework for Optiscaler to work",
-        "If using DLSS inputs keeps crashing, try enabling RestoreComputeSignature=true or RestoreGraphicSignature=true in Optiscaler.ini (or Restore Compute/Graphic Root Signature under Root Signatures menu in Opti Overlay)",
-        "For MH Rise, RestoreComputeSignature=true was enough to fix DLSS crashes",
-        "To fix GUI with DLSS inputs (with/without FG), try enabling RestoreComputeSignature=true or RestoreGraphicSignature=true in Optiscaler.ini (or Restore Compute/Graphic Root Signature under Root Signatures menu in Opti Overlay)",
-        "RestoreComputeSignature=true and RestoreGraphicSignature=true are crash / UI-fix troubleshooting options in the wiki, so they are kept as notes rather than auto-applied defaults."
-      ],
-      "recommended_method": "dxgi",
-      "recommended_methods": [
-        "dxgi"
-      ],
-      "recommended_optiscaler_ini_overrides": {},
-      "source": "OptiScaler wiki",
-      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Capcom-RE-engine-games",
-      "steam_name": "Capcom RE engine games",
-      "wiki_slug": "Capcom-RE-engine-games"
     },
     "Caravan-Sandwitch": {
       "notes": [
@@ -366,6 +362,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Caravan-Sandwitch",
+      "steam_appids": [
+        1582650
+      ],
       "steam_name": "Caravan Sandwitch",
       "wiki_slug": "Caravan-Sandwitch"
     },
@@ -384,6 +383,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Clair-Obscur-Expedition-33",
+      "steam_appids": [
+        1903340
+      ],
       "steam_name": "Clair Obscur Expedition 33",
       "wiki_slug": "Clair-Obscur-Expedition-33"
     },
@@ -404,6 +406,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Control-Ultimate-Edition",
+      "steam_appids": [
+        870780
+      ],
       "steam_name": "Control Ultimate Edition",
       "wiki_slug": "Control-Ultimate-Edition"
     },
@@ -419,6 +424,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Crimson-Desert",
+      "steam_appids": [
+        3321460
+      ],
       "steam_name": "Crimson Desert",
       "wiki_slug": "Crimson-Desert"
     },
@@ -438,6 +446,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Cronos-The-New-Dawn",
+      "steam_appids": [
+        2101960
+      ],
       "steam_name": "Cronos The New Dawn",
       "wiki_slug": "Cronos-The-New-Dawn"
     },
@@ -452,6 +463,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Crysis-3-Remastered",
+      "steam_appids": [
+        2096610
+      ],
       "steam_name": "Crysis 3 Remastered",
       "wiki_slug": "Crysis-3-Remastered"
     },
@@ -469,6 +483,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Cyberpunk-2077",
+      "steam_appids": [
+        1091500
+      ],
       "steam_name": "Cyberpunk 2077",
       "wiki_slug": "Cyberpunk-2077"
     },
@@ -484,6 +501,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/DEATH-STRANDING-2-ON-THE-BEACH",
+      "steam_appids": [
+        3280350
+      ],
       "steam_name": "DEATH STRANDING 2 ON THE BEACH",
       "wiki_slug": "DEATH-STRANDING-2-ON-THE-BEACH"
     },
@@ -503,6 +523,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/DOOM-Eternal",
+      "steam_appids": [
+        782330
+      ],
       "steam_name": "DOOM Eternal",
       "wiki_slug": "DOOM-Eternal"
     },
@@ -519,6 +542,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/DYNASTY-WARRIORS-ORIGINS",
+      "steam_appids": [
+        2384580
+      ],
       "steam_name": "DYNASTY WARRIORS ORIGINS",
       "wiki_slug": "DYNASTY-WARRIORS-ORIGINS"
     },
@@ -536,6 +562,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Dead-Island-2",
+      "steam_appids": [
+        934700
+      ],
       "steam_name": "Dead Island 2",
       "wiki_slug": "Dead-Island-2"
     },
@@ -553,6 +582,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Dead-Space-(2023)",
+      "steam_appids": [
+        1693980
+      ],
       "steam_name": "Dead Space (2023)",
       "wiki_slug": "Dead-Space-(2023)"
     },
@@ -571,6 +603,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Death-Stranding-Director's-Cut",
+      "steam_appids": [
+        1850570
+      ],
       "steam_name": "Death Stranding Director's Cut",
       "wiki_slug": "Death-Stranding-Director's-Cut"
     },
@@ -599,6 +634,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Devil-May-Cry-5",
+      "steam_appids": [
+        601150
+      ],
       "steam_name": "Devil May Cry 5",
       "wiki_slug": "Devil-May-Cry-5"
     },
@@ -617,6 +655,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Diablo-4",
+      "steam_appids": [
+        2344520
+      ],
       "steam_name": "Diablo 4",
       "wiki_slug": "Diablo-4"
     },
@@ -634,6 +675,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Diablo-II-Resurrected",
+      "steam_appids": [
+        2536520
+      ],
       "steam_name": "Diablo II Resurrected",
       "wiki_slug": "Diablo-II-Resurrected"
     },
@@ -654,6 +698,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Directorate-Novitiate",
+      "steam_appids": [
+        1883830
+      ],
       "steam_name": "Directorate Novitiate",
       "wiki_slug": "Directorate-Novitiate"
     },
@@ -676,6 +723,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Dishonored-2",
+      "steam_appids": [
+        403640
+      ],
       "steam_name": "Dishonored 2",
       "wiki_slug": "Dishonored-2"
     },
@@ -695,6 +745,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Doom-The-Dark-Ages",
+      "steam_appids": [
+        3017860
+      ],
       "steam_name": "Doom The Dark Ages",
       "wiki_slug": "Doom-The-Dark-Ages"
     },
@@ -714,6 +767,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Dragon-Age-The-Veilguard",
+      "steam_appids": [
+        1845910
+      ],
       "steam_name": "Dragon Age The Veilguard",
       "wiki_slug": "Dragon-Age-The-Veilguard"
     },
@@ -738,6 +794,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Dragons-Dogma-2",
+      "steam_appids": [
+        2054970
+      ],
       "steam_name": "Dragons Dogma 2",
       "wiki_slug": "Dragons-Dogma-2"
     },
@@ -760,6 +819,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Dying-Light-2",
+      "steam_appids": [
+        534380
+      ],
       "steam_name": "Dying Light 2",
       "wiki_slug": "Dying-Light-2"
     },
@@ -784,6 +846,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Dying-Light-The-Beast",
+      "steam_appids": [
+        3008130
+      ],
       "steam_name": "Dying Light The Beast",
       "wiki_slug": "Dying-Light-The-Beast"
     },
@@ -800,6 +865,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Echo-Point-Nova",
+      "steam_appids": [
+        1836730
+      ],
       "steam_name": "Echo Point Nova",
       "wiki_slug": "Echo-Point-Nova"
     },
@@ -815,6 +883,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Echoes-of-the-End",
+      "steam_appids": [
+        2821610
+      ],
       "steam_name": "Echoes of the End",
       "wiki_slug": "Echoes-of-the-End"
     },
@@ -834,6 +905,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Elden-Ring-(ERSS\u2010FG)",
+      "steam_appids": [
+        1245620
+      ],
       "steam_name": "Elden Ring (ERSS\u2010FG)",
       "wiki_slug": "Elden-Ring-(ERSS\u2010FG)"
     },
@@ -849,6 +923,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Enshrouded",
+      "steam_appids": [
+        1203620
+      ],
       "steam_name": "Enshrouded",
       "wiki_slug": "Enshrouded"
     },
@@ -867,26 +944,11 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Epic-Mickey-Rebrushed",
+      "steam_appids": [
+        1522160
+      ],
       "steam_name": "Epic Mickey Rebrushed",
       "wiki_slug": "Epic-Mickey-Rebrushed"
-    },
-    "Escape-from-Tarkov-(SPT)": {
-      "notes": [
-        "OptiScaler wiki lists multiple compatible DLL names: dxgi.dll, winmm.dll.",
-        "Only works for the Singleplayer Tarkov mod (SPT)!",
-        "Testers reported using Opti as dxgi.dll worked fine, but some reported winmm.dll instead had to be used to boot",
-        "Recommended to test various supported Opti names if game not booting"
-      ],
-      "recommended_method": null,
-      "recommended_methods": [
-        "dxgi",
-        "winmm"
-      ],
-      "recommended_optiscaler_ini_overrides": {},
-      "source": "OptiScaler wiki",
-      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Escape-from-Tarkov-(SPT)",
-      "steam_name": "Escape from Tarkov (SPT)",
-      "wiki_slug": "Escape-from-Tarkov-(SPT)"
     },
     "F1-Manager-2024": {
       "notes": [
@@ -899,6 +961,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/F1-Manager-2024",
+      "steam_appids": [
+        2591280
+      ],
       "steam_name": "F1 Manager 2024",
       "wiki_slug": "F1-Manager-2024"
     },
@@ -925,6 +990,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/FINAL-FANTASY-VII-REBIRTH",
+      "steam_appids": [
+        2909400
+      ],
       "steam_name": "FINAL FANTASY VII REBIRTH",
       "wiki_slug": "FINAL-FANTASY-VII-REBIRTH"
     },
@@ -940,6 +1008,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/FINAL-FANTASY-XVI",
+      "steam_appids": [
+        2515020
+      ],
       "steam_name": "FINAL FANTASY XVI",
       "wiki_slug": "FINAL-FANTASY-XVI"
     },
@@ -955,6 +1026,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Final-Fantasy-XIV-Dawntrail",
+      "steam_appids": [
+        2649240
+      ],
       "steam_name": "Final Fantasy XIV Dawntrail",
       "wiki_slug": "Final-Fantasy-XIV-Dawntrail"
     },
@@ -974,6 +1048,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Flintlock-The-Siege-of-Dawn",
+      "steam_appids": [
+        1832040
+      ],
       "steam_name": "Flintlock The Siege of Dawn",
       "wiki_slug": "Flintlock-The-Siege-of-Dawn"
     },
@@ -989,6 +1066,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Forgive-me-Father-2",
+      "steam_appids": [
+        2272250
+      ],
       "steam_name": "Forgive me Father 2",
       "wiki_slug": "Forgive-me-Father-2"
     },
@@ -1003,6 +1083,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Forspoken",
+      "steam_appids": [
+        1680880
+      ],
       "steam_name": "Forspoken",
       "wiki_slug": "Forspoken"
     },
@@ -1026,6 +1109,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Forza-Horizon-5",
+      "steam_appids": [
+        1551360
+      ],
       "steam_name": "Forza Horizon 5",
       "wiki_slug": "Forza-Horizon-5"
     },
@@ -1043,6 +1129,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Frostpunk-2",
+      "steam_appids": [
+        1601580
+      ],
       "steam_name": "Frostpunk 2",
       "wiki_slug": "Frostpunk-2"
     },
@@ -1063,6 +1152,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Ghost-of-Tsushima-DIRECTORS-CUT",
+      "steam_appids": [
+        2215430
+      ],
       "steam_name": "Ghost of Tsushima DIRECTORS CUT",
       "wiki_slug": "Ghost-of-Tsushima-DIRECTORS-CUT"
     },
@@ -1082,6 +1174,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Ghostrunner",
+      "steam_appids": [
+        1139900
+      ],
       "steam_name": "Ghostrunner",
       "wiki_slug": "Ghostrunner"
     },
@@ -1104,6 +1199,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Ghostrunner-2",
+      "steam_appids": [
+        2144740
+      ],
       "steam_name": "Ghostrunner 2",
       "wiki_slug": "Ghostrunner-2"
     },
@@ -1120,6 +1218,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/God-of-War-2018",
+      "steam_appids": [
+        1593500
+      ],
       "steam_name": "God of War 2018",
       "wiki_slug": "God-of-War-2018"
     },
@@ -1135,6 +1236,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/God-of-War-Ragnarok",
+      "steam_appids": [
+        2322010
+      ],
       "steam_name": "God of War Ragnarok",
       "wiki_slug": "God-of-War-Ragnarok"
     },
@@ -1149,6 +1253,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Gotham-Knights",
+      "steam_appids": [
+        1496790
+      ],
       "steam_name": "Gotham Knights",
       "wiki_slug": "Gotham-Knights"
     },
@@ -1163,6 +1270,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Grand-Theft-Auto-III-\u2010-Definitive-Edition",
+      "steam_appids": [
+        1546970
+      ],
       "steam_name": "Grand Theft Auto III \u2010 Definitive Edition",
       "wiki_slug": "Grand-Theft-Auto-III-\u2010-Definitive-Edition"
     },
@@ -1177,6 +1287,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Grand-Theft-Auto-San-Andreas-\u2010-Definitive-Edition",
+      "steam_appids": [
+        1547000
+      ],
       "steam_name": "Grand Theft Auto San Andreas \u2010 Definitive Edition",
       "wiki_slug": "Grand-Theft-Auto-San-Andreas-\u2010-Definitive-Edition"
     },
@@ -1199,6 +1312,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Grand-Theft-Auto-V-Enhanced",
+      "steam_appids": [
+        3240220
+      ],
       "steam_name": "Grand Theft Auto V Enhanced",
       "wiki_slug": "Grand-Theft-Auto-V-Enhanced"
     },
@@ -1213,6 +1329,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Grand-Theft-Auto-Vice-City-\u2010-Definitive-Edition",
+      "steam_appids": [
+        1546990
+      ],
       "steam_name": "Grand Theft Auto Vice City \u2010 Definitive Edition",
       "wiki_slug": "Grand-Theft-Auto-Vice-City-\u2010-Definitive-Edition"
     },
@@ -1229,6 +1348,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Guardians-of-the-Galaxy",
+      "steam_appids": [
+        1088850
+      ],
       "steam_name": "Guardians of the Galaxy",
       "wiki_slug": "Guardians-of-the-Galaxy"
     },
@@ -1245,6 +1367,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/HITMAN-3-World-of-Assassination",
+      "steam_appids": [
+        1659040
+      ],
       "steam_name": "HITMAN 3 World of Assassination",
       "wiki_slug": "HITMAN-3-World-of-Assassination"
     },
@@ -1268,6 +1393,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Hell-is-Us",
+      "steam_appids": [
+        1620730
+      ],
       "steam_name": "Hell is Us",
       "wiki_slug": "Hell-is-Us"
     },
@@ -1283,6 +1411,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Hellblade-Senuas-Sacrifice",
+      "steam_appids": [
+        414340
+      ],
       "steam_name": "Hellblade Senuas Sacrifice",
       "wiki_slug": "Hellblade-Senuas-Sacrifice"
     },
@@ -1300,6 +1431,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/High-on-Life",
+      "steam_appids": [
+        1583230
+      ],
       "steam_name": "High on Life",
       "wiki_slug": "High-on-Life"
     },
@@ -1319,6 +1453,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Hogwarts-Legacy",
+      "steam_appids": [
+        990080
+      ],
       "steam_name": "Hogwarts Legacy",
       "wiki_slug": "Hogwarts-Legacy"
     },
@@ -1340,6 +1477,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Horizon-Forbidden-West-Complete-Edition",
+      "steam_appids": [
+        2420110
+      ],
       "steam_name": "Horizon Forbidden West Complete Edition",
       "wiki_slug": "Horizon-Forbidden-West-Complete-Edition"
     },
@@ -1360,6 +1500,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Horizon-Zero-Dawn",
+      "steam_appids": [
+        1151640
+      ],
       "steam_name": "Horizon Zero Dawn",
       "wiki_slug": "Horizon-Zero-Dawn"
     },
@@ -1382,6 +1525,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Horizon-Zero-Dawn-Remastered",
+      "steam_appids": [
+        2561580
+      ],
       "steam_name": "Horizon Zero Dawn Remastered",
       "wiki_slug": "Horizon-Zero-Dawn-Remastered"
     },
@@ -1398,6 +1544,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Immortals-of-Aveum",
+      "steam_appids": [
+        2009100
+      ],
       "steam_name": "Immortals of Aveum",
       "wiki_slug": "Immortals-of-Aveum"
     },
@@ -1415,6 +1564,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Indiana-Jones-and-the-Great-Circle",
+      "steam_appids": [
+        2677660
+      ],
       "steam_name": "Indiana Jones and the Great Circle",
       "wiki_slug": "Indiana-Jones-and-the-Great-Circle"
     },
@@ -1436,6 +1588,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Keeper",
+      "steam_appids": [
+        3043580
+      ],
       "steam_name": "Keeper",
       "wiki_slug": "Keeper"
     },
@@ -1450,6 +1605,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Kena-Bridge-of-Spirits",
+      "steam_appids": [
+        1954200
+      ],
       "steam_name": "Kena Bridge of Spirits",
       "wiki_slug": "Kena-Bridge-of-Spirits"
     },
@@ -1469,29 +1627,11 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Lies-of-P",
+      "steam_appids": [
+        1627720
+      ],
       "steam_name": "Lies of P",
       "wiki_slug": "Lies-of-P"
-    },
-    "Luma-Unreal-Engine-Luma-UE": {
-      "notes": [
-        "Luma UE uses multiple install methods, so no single DLL filename is recommended in the wiki table.",
-        "On AMD/Intel, the wiki recommends Dxgi=false together with DontUseNTShared=true.",
-        "The wiki also mentions method-specific LoadReshade=true and DontCreateD3D12DeviceForLuma=true cases; those are not auto-applied here because they depend on the chosen install method."
-      ],
-      "recommended_method": null,
-      "recommended_methods": [],
-      "recommended_optiscaler_ini_overrides": {
-        "Dx11withDx12": {
-          "DontUseNTShared": "true"
-        },
-        "Spoofing": {
-          "Dxgi": "false"
-        }
-      },
-      "source": "OptiScaler wiki",
-      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Luma-Unreal-Engine-Luma-UE",
-      "steam_name": "Luma Unreal Engine - Luma UE",
-      "wiki_slug": "Luma-Unreal-Engine-Luma-UE"
     },
     "Mafia-The-Old-Country": {
       "notes": [
@@ -1504,6 +1644,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Mafia-The-Old-Country",
+      "steam_appids": [
+        1941540
+      ],
       "steam_name": "Mafia The Old Country",
       "wiki_slug": "Mafia-The-Old-Country"
     },
@@ -1522,6 +1665,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Marvels-Midnight-Suns",
+      "steam_appids": [
+        368260
+      ],
       "steam_name": "Marvels Midnight Suns",
       "wiki_slug": "Marvels-Midnight-Suns"
     },
@@ -1540,6 +1686,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Marvels-Spider\u2010Man-2",
+      "steam_appids": [
+        2651280
+      ],
       "steam_name": "Marvels Spider\u2010Man 2",
       "wiki_slug": "Marvels-Spider\u2010Man-2"
     },
@@ -1560,6 +1709,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Marvels-Spider\u2010Man-Miles-Morales",
+      "steam_appids": [
+        1817190
+      ],
       "steam_name": "Marvels Spider\u2010Man Miles Morales",
       "wiki_slug": "Marvels-Spider\u2010Man-Miles-Morales"
     },
@@ -1580,6 +1732,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Marvels-Spider\u2010Man-Remastered",
+      "steam_appids": [
+        1817070
+      ],
       "steam_name": "Marvels Spider\u2010Man Remastered",
       "wiki_slug": "Marvels-Spider\u2010Man-Remastered"
     },
@@ -1600,6 +1755,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Metal-Gear-Solid-\u0394-Snake-Eater",
+      "steam_appids": [
+        2417610
+      ],
       "steam_name": "Metal Gear Solid \u0394 Snake Eater",
       "wiki_slug": "Metal-Gear-Solid-\u0394-Snake-Eater"
     },
@@ -1619,44 +1777,11 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Metro-Exodus-Enhanced-Edition",
+      "steam_appids": [
+        412020
+      ],
       "steam_name": "Metro Exodus Enhanced Edition",
       "wiki_slug": "Metro-Exodus-Enhanced-Edition"
-    },
-    "Minecraft-RTX": {
-      "notes": [
-        "OptiScaler wiki lists multiple compatible DLL names: d3d12.dll, dxgi.dll.",
-        "Tested with MCLauncher",
-        "GameFolder, Screenshot 1, Screenshot 2",
-        "Requires using a 3rd party launcher (like MCLauncher or Bedrock Launcher) and using Opti as dxgi.dll or d3d12.dll",
-        "FSR 3.1 and XeSS 2.0.1 DP4a are flickerfests, FSR 2.1 looks the best maybe",
-        "Optiscaler Overlay now invokes properly, but mouse input only works in pause menu, while keyboard input always (arrow keys, Tab and Space)",
-        "Game seems to force DLSS Quality preset by default (only a toggle, no presets), but UpscaleRatioOverrideEnabled=true and setting the value UpscaleRatioOverrideValue= work (or use the Upscale Ratio Override in the overlay then press Save INI), albeit hit and miss - on 1080p, 1.5, 1.7., 2.0 and 3.0 worked, even random 2.5, but 1.0, 1.2 and 1.3 resulted in black bars and artifacts.",
-        "Opti can't create the log file (missing permissions)",
-        "Old method - use Opti as nvngx.dll and run EnableSignatureOverride.reg, use XeSS 1.1",
-        "UpscaleRatioOverrideEnabled and UpscaleRatioOverrideValue are user-tuning options in the wiki rather than safe per-game defaults, so they are not auto-applied here."
-      ],
-      "recommended_method": null,
-      "recommended_methods": [
-        "d3d12",
-        "dxgi"
-      ],
-      "recommended_optiscaler_ini_overrides": {},
-      "source": "OptiScaler wiki",
-      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Minecraft-RTX",
-      "steam_name": "Minecraft RTX",
-      "wiki_slug": "Minecraft-RTX"
-    },
-    "Minecraft-RTX-(Minecraft-Education)": {
-      "notes": [],
-      "recommended_method": "winmm",
-      "recommended_methods": [
-        "winmm"
-      ],
-      "recommended_optiscaler_ini_overrides": {},
-      "source": "OptiScaler wiki",
-      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Minecraft-RTX-(Minecraft-Education)",
-      "steam_name": "Minecraft RTX (Minecraft Education)",
-      "wiki_slug": "Minecraft-RTX-(Minecraft-Education)"
     },
     "Monster-Hunter-Rise": {
       "notes": [
@@ -1675,6 +1800,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Monster-Hunter-Rise",
+      "steam_appids": [
+        1446780
+      ],
       "steam_name": "Monster Hunter Rise",
       "wiki_slug": "Monster-Hunter-Rise"
     },
@@ -1696,6 +1824,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Monster-Hunter-Stories-3-Twisted-Reflection",
+      "steam_appids": [
+        2852190
+      ],
       "steam_name": "Monster Hunter Stories 3 Twisted Reflection",
       "wiki_slug": "Monster-Hunter-Stories-3-Twisted-Reflection"
     },
@@ -1716,6 +1847,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Monster-Hunter-Wilds",
+      "steam_appids": [
+        2246340
+      ],
       "steam_name": "Monster Hunter Wilds",
       "wiki_slug": "Monster-Hunter-Wilds"
     },
@@ -1734,6 +1868,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/NINJA-GAIDEN-2-Black",
+      "steam_appids": [
+        3287520
+      ],
       "steam_name": "NINJA GAIDEN 2 Black",
       "wiki_slug": "NINJA-GAIDEN-2-Black"
     },
@@ -1751,6 +1888,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/NINJA-GAIDEN-4",
+      "steam_appids": [
+        2627260
+      ],
       "steam_name": "NINJA GAIDEN 4",
       "wiki_slug": "NINJA-GAIDEN-4"
     },
@@ -1770,6 +1910,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Need-For-Speed-Unbound",
+      "steam_appids": [
+        1846380
+      ],
       "steam_name": "Need For Speed Unbound",
       "wiki_slug": "Need-For-Speed-Unbound"
     },
@@ -1791,6 +1934,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Nioh-2-The-Complete-Edition",
+      "steam_appids": [
+        1325200
+      ],
       "steam_name": "Nioh 2 The Complete Edition",
       "wiki_slug": "Nioh-2-The-Complete-Edition"
     },
@@ -1809,6 +1955,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Nioh-3",
+      "steam_appids": [
+        3681010
+      ],
       "steam_name": "Nioh 3",
       "wiki_slug": "Nioh-3"
     },
@@ -1829,6 +1978,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/No-Man's-Sky",
+      "steam_appids": [
+        275850
+      ],
       "steam_name": "No Man's Sky",
       "wiki_slug": "No-Man's-Sky"
     },
@@ -1841,6 +1993,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/POOLS",
+      "steam_appids": [
+        2663530
+      ],
       "steam_name": "POOLS",
       "wiki_slug": "POOLS"
     },
@@ -1856,6 +2011,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/POSTAL-4-No-Regerts",
+      "steam_appids": [
+        707030
+      ],
       "steam_name": "POSTAL 4 No Regerts",
       "wiki_slug": "POSTAL-4-No-Regerts"
     },
@@ -1871,6 +2029,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Palworld",
+      "steam_appids": [
+        1623730
+      ],
       "steam_name": "Palworld",
       "wiki_slug": "Palworld"
     },
@@ -1883,6 +2044,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Path-of-Exile-2",
+      "steam_appids": [
+        2694490
+      ],
       "steam_name": "Path of Exile 2",
       "wiki_slug": "Path-of-Exile-2"
     },
@@ -1895,6 +2059,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Portal-Prelude-RTX",
+      "steam_appids": [
+        2410180
+      ],
       "steam_name": "Portal Prelude RTX",
       "wiki_slug": "Portal-Prelude-RTX"
     },
@@ -1908,6 +2075,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Prey-Luma-Remastered-mod",
+      "steam_appids": [
+        480490
+      ],
       "steam_name": "Prey Luma Remastered mod",
       "wiki_slug": "Prey-Luma-Remastered-mod"
     },
@@ -1928,6 +2098,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Quarantine-Zone-The-Last-Check",
+      "steam_appids": [
+        3419520
+      ],
       "steam_name": "Quarantine Zone The Last Check",
       "wiki_slug": "Quarantine-Zone-The-Last-Check"
     },
@@ -1943,6 +2116,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/REANIMAL",
+      "steam_appids": [
+        2129530
+      ],
       "steam_name": "REANIMAL",
       "wiki_slug": "REANIMAL"
     },
@@ -1965,20 +2141,11 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/ROMEO-IS-A-DEAD-MAN",
+      "steam_appids": [
+        3050900
+      ],
       "steam_name": "ROMEO IS A DEAD MAN",
       "wiki_slug": "ROMEO-IS-A-DEAD-MAN"
-    },
-    "RTX-Remix-Games": {
-      "notes": [],
-      "recommended_method": "winmm",
-      "recommended_methods": [
-        "winmm"
-      ],
-      "recommended_optiscaler_ini_overrides": {},
-      "source": "OptiScaler wiki",
-      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/RTX-Remix-Games",
-      "steam_name": "RTX Remix Games",
-      "wiki_slug": "RTX-Remix-Games"
     },
     "Ratchet-&-Clank-Rift-Apart": {
       "notes": [
@@ -1996,6 +2163,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Ratchet-&-Clank-Rift-Apart",
+      "steam_appids": [
+        1895880
+      ],
       "steam_name": "Ratchet & Clank Rift Apart",
       "wiki_slug": "Ratchet-&-Clank-Rift-Apart"
     },
@@ -2015,6 +2185,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Ready-or-Not",
+      "steam_appids": [
+        1144200
+      ],
       "steam_name": "Ready or Not",
       "wiki_slug": "Ready-or-Not"
     },
@@ -2029,6 +2202,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Red-Dead-Redemption",
+      "steam_appids": [
+        2668510
+      ],
       "steam_name": "Red Dead Redemption",
       "wiki_slug": "Red-Dead-Redemption"
     },
@@ -2053,6 +2229,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Red-Dead-Redemption-II",
+      "steam_appids": [
+        1174180
+      ],
       "steam_name": "Red Dead Redemption II",
       "wiki_slug": "Red-Dead-Redemption-II"
     },
@@ -2067,6 +2246,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Redout-2",
+      "steam_appids": [
+        1799930
+      ],
       "steam_name": "Redout 2",
       "wiki_slug": "Redout-2"
     },
@@ -2095,6 +2277,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Resident-Evil-2-(2019)",
+      "steam_appids": [
+        883710
+      ],
       "steam_name": "Resident Evil 2 (2019)",
       "wiki_slug": "Resident-Evil-2-(2019)"
     },
@@ -2123,6 +2308,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Resident-Evil-3-(2020)",
+      "steam_appids": [
+        952060
+      ],
       "steam_name": "Resident Evil 3 (2020)",
       "wiki_slug": "Resident-Evil-3-(2020)"
     },
@@ -2152,6 +2340,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Resident-Evil-4-(2023)",
+      "steam_appids": [
+        2050650
+      ],
       "steam_name": "Resident Evil 4 (2023)",
       "wiki_slug": "Resident-Evil-4-(2023)"
     },
@@ -2180,6 +2371,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Resident-Evil-7-Biohazard",
+      "steam_appids": [
+        418370
+      ],
       "steam_name": "Resident Evil 7 Biohazard",
       "wiki_slug": "Resident-Evil-7-Biohazard"
     },
@@ -2209,6 +2403,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Resident-Evil-8-Village",
+      "steam_appids": [
+        1196590
+      ],
       "steam_name": "Resident Evil 8 Village",
       "wiki_slug": "Resident-Evil-8-Village"
     },
@@ -2233,6 +2430,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Resident-Evil-9-Requiem",
+      "steam_appids": [
+        3764200
+      ],
       "steam_name": "Resident Evil 9 Requiem",
       "wiki_slug": "Resident-Evil-9-Requiem"
     },
@@ -2253,6 +2453,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Returnal",
+      "steam_appids": [
+        1649240
+      ],
       "steam_name": "Returnal",
       "wiki_slug": "Returnal"
     },
@@ -2268,6 +2471,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Revenge-of-the-Savage-Planet",
+      "steam_appids": [
+        2787320
+      ],
       "steam_name": "Revenge of the Savage Planet",
       "wiki_slug": "Revenge-of-the-Savage-Planet"
     },
@@ -2284,6 +2490,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Rise-of-the-Tomb-Raider",
+      "steam_appids": [
+        391220
+      ],
       "steam_name": "Rise of the Tomb Raider",
       "wiki_slug": "Rise-of-the-Tomb-Raider"
     },
@@ -2301,6 +2510,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Robocop-Rogue-City",
+      "steam_appids": [
+        1681430
+      ],
       "steam_name": "Robocop Rogue City",
       "wiki_slug": "Robocop-Rogue-City"
     },
@@ -2317,6 +2529,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Robocop-Rogue-City-\u2010-Unfinished-Business",
+      "steam_appids": [
+        3527760
+      ],
       "steam_name": "Robocop Rogue City \u2010 Unfinished Business",
       "wiki_slug": "Robocop-Rogue-City-\u2010-Unfinished-Business"
     },
@@ -2338,6 +2553,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Rune-Factory-Guardians-of-Azuma",
+      "steam_appids": [
+        2864560
+      ],
       "steam_name": "Rune Factory Guardians of Azuma",
       "wiki_slug": "Rune-Factory-Guardians-of-Azuma"
     },
@@ -2357,6 +2575,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/S.T.A.L.K.E.R.-2-Heart-of-Chornobyl",
+      "steam_appids": [
+        1643320
+      ],
       "steam_name": "S.T.A.L.K.E.R. 2 Heart of Chornobyl",
       "wiki_slug": "S.T.A.L.K.E.R.-2-Heart-of-Chornobyl"
     },
@@ -2374,6 +2595,11 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/STALKER-Enhanced-Editions",
+      "steam_appids": [
+        2427410,
+        2427420,
+        2427430
+      ],
       "steam_name": "STALKER Enhanced Editions",
       "wiki_slug": "STALKER-Enhanced-Editions"
     },
@@ -2395,6 +2621,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/STAR-WARS-Jedi-Fallen-Order",
+      "steam_appids": [
+        1172380
+      ],
       "steam_name": "STAR WARS Jedi Fallen Order",
       "wiki_slug": "STAR-WARS-Jedi-Fallen-Order"
     },
@@ -2417,6 +2646,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/STAR-WARS-Jedi-Survivor",
+      "steam_appids": [
+        1774580
+      ],
       "steam_name": "STAR WARS Jedi Survivor",
       "wiki_slug": "STAR-WARS-Jedi-Survivor"
     },
@@ -2433,6 +2665,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Sackboy-\u2010-A-Big-Adventure",
+      "steam_appids": [
+        1599660
+      ],
       "steam_name": "Sackboy \u2010 A Big Adventure",
       "wiki_slug": "Sackboy-\u2010-A-Big-Adventure"
     },
@@ -2452,6 +2687,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Scorn",
+      "steam_appids": [
+        698670
+      ],
       "steam_name": "Scorn",
       "wiki_slug": "Scorn"
     },
@@ -2465,6 +2703,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/SekiroTSR",
+      "steam_appids": [
+        814380
+      ],
       "steam_name": "SekiroTSR",
       "wiki_slug": "SekiroTSR"
     },
@@ -2477,6 +2718,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Senua's-Saga-Hellblade-II",
+      "steam_appids": [
+        2461850
+      ],
       "steam_name": "Senua's Saga Hellblade II",
       "wiki_slug": "Senua's-Saga-Hellblade-II"
     },
@@ -2495,6 +2739,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Shadow-of-the-Tomb-Raider",
+      "steam_appids": [
+        750920
+      ],
       "steam_name": "Shadow of the Tomb Raider",
       "wiki_slug": "Shadow-of-the-Tomb-Raider"
     },
@@ -2512,6 +2759,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Silent-Hill-2-Remake",
+      "steam_appids": [
+        2124490
+      ],
       "steam_name": "Silent Hill 2 Remake",
       "wiki_slug": "Silent-Hill-2-Remake"
     },
@@ -2533,6 +2783,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Silent-Hill-f",
+      "steam_appids": [
+        2947440
+      ],
       "steam_name": "Silent Hill f",
       "wiki_slug": "Silent-Hill-f"
     },
@@ -2554,6 +2807,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Skyrim-SE",
+      "steam_appids": [
+        489830
+      ],
       "steam_name": "Skyrim SE",
       "wiki_slug": "Skyrim-SE"
     },
@@ -2569,6 +2825,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Spirit-of-the-North-2",
+      "steam_appids": [
+        1778840
+      ],
       "steam_name": "Spirit of the North 2",
       "wiki_slug": "Spirit-of-the-North-2"
     },
@@ -2590,6 +2849,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Star-Wars-Outlaws",
+      "steam_appids": [
+        2842040
+      ],
       "steam_name": "Star Wars Outlaws",
       "wiki_slug": "Star-Wars-Outlaws"
     },
@@ -2607,6 +2869,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Starfield",
+      "steam_appids": [
+        1716740
+      ],
       "steam_name": "Starfield",
       "wiki_slug": "Starfield"
     },
@@ -2621,6 +2886,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Still-Wakes-the-Deep",
+      "steam_appids": [
+        1622910
+      ],
       "steam_name": "Still Wakes the Deep",
       "wiki_slug": "Still-Wakes-the-Deep"
     },
@@ -2633,6 +2901,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Suicide-Squad-Kill-The-Justice-League",
+      "steam_appids": [
+        315210
+      ],
       "steam_name": "Suicide Squad Kill The Justice League",
       "wiki_slug": "Suicide-Squad-Kill-The-Justice-League"
     },
@@ -2654,6 +2925,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Supraworld",
+      "steam_appids": [
+        1869290
+      ],
       "steam_name": "Supraworld",
       "wiki_slug": "Supraworld"
     },
@@ -2675,6 +2949,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/The-Callisto-Protocol",
+      "steam_appids": [
+        1544020
+      ],
       "steam_name": "The Callisto Protocol",
       "wiki_slug": "The-Callisto-Protocol"
     },
@@ -2691,6 +2968,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/The-Elder-Scrolls-IV-Oblivion-Remastered",
+      "steam_appids": [
+        2623190
+      ],
       "steam_name": "The Elder Scrolls IV Oblivion Remastered",
       "wiki_slug": "The-Elder-Scrolls-IV-Oblivion-Remastered"
     },
@@ -2708,6 +2988,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/The-First-Berserker-Khazan",
+      "steam_appids": [
+        2680010
+      ],
       "steam_name": "The First Berserker Khazan",
       "wiki_slug": "The-First-Berserker-Khazan"
     },
@@ -2727,6 +3010,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/The-Last-of-Us-Part-I",
+      "steam_appids": [
+        1888930
+      ],
       "steam_name": "The Last of Us Part I",
       "wiki_slug": "The-Last-of-Us-Part-I"
     },
@@ -2747,6 +3033,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/The-Last-of-Us-Part-II-Remastered",
+      "steam_appids": [
+        2531310
+      ],
       "steam_name": "The Last of Us Part II Remastered",
       "wiki_slug": "The-Last-of-Us-Part-II-Remastered"
     },
@@ -2764,6 +3053,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/The-Medium",
+      "steam_appids": [
+        1293160
+      ],
       "steam_name": "The Medium",
       "wiki_slug": "The-Medium"
     },
@@ -2778,6 +3070,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/The-Midnight-Walk",
+      "steam_appids": [
+        2863640
+      ],
       "steam_name": "The Midnight Walk",
       "wiki_slug": "The-Midnight-Walk"
     },
@@ -2801,6 +3096,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/The-Outer-Worlds-Spacers-Choice-Edition",
+      "steam_appids": [
+        1920490
+      ],
       "steam_name": "The Outer Worlds Spacers Choice Edition",
       "wiki_slug": "The-Outer-Worlds-Spacers-Choice-Edition"
     },
@@ -2823,6 +3121,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/The-Talos-Principle-2",
+      "steam_appids": [
+        835960
+      ],
       "steam_name": "The Talos Principle 2",
       "wiki_slug": "The-Talos-Principle-2"
     },
@@ -2837,6 +3138,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/The-Thaumaturge",
+      "steam_appids": [
+        1684350
+      ],
       "steam_name": "The Thaumaturge",
       "wiki_slug": "The-Thaumaturge"
     },
@@ -2853,6 +3157,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/The-Witcher-3-Wild-Hunt",
+      "steam_appids": [
+        292030
+      ],
       "steam_name": "The Witcher 3 Wild Hunt",
       "wiki_slug": "The-Witcher-3-Wild-Hunt"
     },
@@ -2872,6 +3179,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Thymesia",
+      "steam_appids": [
+        1343240
+      ],
       "steam_name": "Thymesia",
       "wiki_slug": "Thymesia"
     },
@@ -2893,6 +3203,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Tiny-Tinas-Wonderlands",
+      "steam_appids": [
+        1286680
+      ],
       "steam_name": "Tiny Tinas Wonderlands",
       "wiki_slug": "Tiny-Tinas-Wonderlands"
     },
@@ -2909,6 +3222,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Tony-Hawk's-Pro-Skater-3-4",
+      "steam_appids": [
+        2545710
+      ],
       "steam_name": "Tony Hawk's Pro Skater 3 4",
       "wiki_slug": "Tony-Hawk's-Pro-Skater-3-4"
     },
@@ -2923,6 +3239,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Trepang2",
+      "steam_appids": [
+        1164940
+      ],
       "steam_name": "Trepang2",
       "wiki_slug": "Trepang2"
     },
@@ -2935,6 +3254,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/UNCHARTED-Legacy-of-Thieves-Collection",
+      "steam_appids": [
+        1659420
+      ],
       "steam_name": "UNCHARTED Legacy of Thieves Collection",
       "wiki_slug": "UNCHARTED-Legacy-of-Thieves-Collection"
     },
@@ -2951,6 +3273,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/WUCHANG-Fallen-Feathers",
+      "steam_appids": [
+        2277560
+      ],
       "steam_name": "WUCHANG Fallen Feathers",
       "wiki_slug": "WUCHANG-Fallen-Feathers"
     },
@@ -2972,6 +3297,9 @@
       },
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Way-of-the-Hunter",
+      "steam_appids": [
+        1288320
+      ],
       "steam_name": "Way of the Hunter",
       "wiki_slug": "Way-of-the-Hunter"
     },
@@ -2992,6 +3320,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Wild-Hearts",
+      "steam_appids": [
+        1938010
+      ],
       "steam_name": "Wild Hearts",
       "wiki_slug": "Wild-Hearts"
     },
@@ -3006,6 +3337,9 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Witchfire",
+      "steam_appids": [
+        3156770
+      ],
       "steam_name": "Witchfire",
       "wiki_slug": "Witchfire"
     },
@@ -3025,26 +3359,11 @@
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Wuthering-Waves",
+      "steam_appids": [
+        3513350
+      ],
       "steam_name": "Wuthering Waves",
       "wiki_slug": "Wuthering-Waves"
-    },
-    "Zenless-Zone-Zero": {
-      "notes": [
-        "Only unblocked filename for OptiScaler is d3d12.dll.",
-        "Launch in DX12 mode with the -use-d3d12 launch argument to use DLSS input.",
-        "Game cannot be launched in DX12 as of patch 2.6, rendering DLSS inputs and OptiScaler unusable.",
-        "Hard-coded upscale ratio of 1.4, regardless of preset.",
-        "When using FSR4, enable non-linear sRGB to fix the black screen output."
-      ],
-      "recommended_method": "d3d12",
-      "recommended_methods": [
-        "d3d12"
-      ],
-      "recommended_optiscaler_ini_overrides": {},
-      "source": "OptiScaler wiki",
-      "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Zenless-Zone-Zero",
-      "steam_name": "Zenless Zone Zero",
-      "wiki_slug": "Zenless-Zone-Zero"
     }
   },
   "version": 1
