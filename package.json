@@ -63,6 +63,11 @@
       "sha256hash": "2604c0b392072d715b400b2f89434274de31995a4b6e68ce38250ebbd3f6c5fc",
       "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-fsr4-int8-4.0.2b-opti-0.7.9/amd_fidelityfx_upscaler_dx12.dll",
       "name": "amd_fidelityfx_upscaler_dx12.dll"
+    },
+    {
+      "sha256hash": "001b419bf315da6b200b8c29bb69df37117d7efb1341dd77bdd943b22491ab36",
+      "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-optipatcher-3-27-2026/OptiPatcher.asi",
+      "name": "OptiPatcher.asi"
     }
   ]
 }

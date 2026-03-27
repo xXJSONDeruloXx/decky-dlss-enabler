@@ -202,6 +202,7 @@ def _merged_entry(parsed_entry: dict, existing_entry: dict | None) -> dict:
         "steam_appids",
         "aliases",
         "recommended_optiscaler_ini_overrides",
+        "recommended_optipatcher",
         "notes",
         "recommended_method",
         "recommended_methods",

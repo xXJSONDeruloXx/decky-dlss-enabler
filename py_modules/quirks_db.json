@@ -421,6 +421,7 @@
       "recommended_methods": [
         "dxgi"
       ],
+      "recommended_optipatcher": true,
       "recommended_optiscaler_ini_overrides": {},
       "source": "OptiScaler wiki",
       "source_url": "https://github.com/optiscaler/OptiScaler/wiki/Crimson-Desert",
