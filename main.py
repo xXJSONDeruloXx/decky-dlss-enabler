@@ -30,27 +30,33 @@ KNOWN_DLSS_ENABLER_ASSETS_BY_VERSION = {
 DLSS_ENABLER_VERSION = CURRENT_DLSS_ENABLER_VERSION
 BUNDLED_ASSET_SHA256 = KNOWN_DLSS_ENABLER_ASSETS_BY_VERSION[DLSS_ENABLER_VERSION]["sha256"]
 
-FSR4_INT8_BUNDLE = {
-    "id": "fsr4-int8-4.0.2b-opti-0.7.9",
-    "label": "FSR4 INT8 4.0.2b",
-    "fsr4_version": "4.0.2b",
-    "optiscaler_version": "0.7.9",
-    "release_tag": "bins-fsr4-int8-4.0.2b-opti-0.7.9",
-    "assets": [
-        {
-            "asset_name": "amd_fidelityfx_dx12.dll",
-            "target_name": "amd_fidelityfx_dx12.dll",
-            "sha256": "6bf0d4f89611ff3cf0f15f767eb4c16c7044cba1e83d6272d996add42980b767",
-            "kind": "ffx-loader",
-        },
-        {
-            "asset_name": "amd_fidelityfx_upscaler_dx12.dll",
-            "target_name": "amd_fidelityfx_upscaler_dx12.dll",
-            "sha256": "2604c0b392072d715b400b2f89434274de31995a4b6e68ce38250ebbd3f6c5fc",
-            "kind": "fsr4-upscaler",
-        },
-    ],
+MANAGED_FSR_PROFILES = {
+    "fsr4-int8-4.0.2b-opti-0.7.9": {
+        "id": "fsr4-int8-4.0.2b-opti-0.7.9",
+        "label": "FSR4 INT8 4.0.2b (RDNA2&3)",
+        "family": "fsr4",
+        "fsr4_version": "4.0.2b",
+        "hardware": "RDNA2&3",
+        "optiscaler_version": "0.7.9",
+        "release_tag": "bins-fsr4-int8-4.0.2b-opti-0.7.9",
+        "assets": [
+            {
+                "asset_name": "amd_fidelityfx_dx12.dll",
+                "target_name": "amd_fidelityfx_dx12.dll",
+                "sha256": "6bf0d4f89611ff3cf0f15f767eb4c16c7044cba1e83d6272d996add42980b767",
+                "kind": "ffx-loader",
+            },
+            {
+                "asset_name": "amd_fidelityfx_upscaler_dx12.dll",
+                "target_name": "amd_fidelityfx_upscaler_dx12.dll",
+                "sha256": "2604c0b392072d715b400b2f89434274de31995a4b6e68ce38250ebbd3f6c5fc",
+                "kind": "fsr4-upscaler",
+            },
+        ],
+    },
 }
+DEFAULT_FSR_PROFILE_ID = "fsr4-int8-4.0.2b-opti-0.7.9"
+FSR4_INT8_BUNDLE = MANAGED_FSR_PROFILES[DEFAULT_FSR_PROFILE_ID]
 OPTIPATCHER_PLUGIN = {
     "id": "optipatcher-2026-03-27",
     "label": "OptiPatcher",
@@ -183,6 +189,24 @@ class Plugin:
 
         return normalized
 
+    def _normalized_fsr_profile_id(self, fsr_profile_id: str | None) -> str | None:
+        normalized = str(fsr_profile_id or "").strip()
+        if not normalized or normalized in {"disabled", "none", "false"}:
+            return None
+        if normalized not in MANAGED_FSR_PROFILES:
+            raise ValueError(f"Unsupported FSR profile '{fsr_profile_id}'")
+        return normalized
+
+    def _fsr_profile(self, fsr_profile_id: str | None) -> dict | None:
+        normalized = str(fsr_profile_id or "").strip()
+        if not normalized:
+            return None
+        return MANAGED_FSR_PROFILES.get(normalized)
+
+    def _marker_fsr_profile_id(self, metadata: dict) -> str | None:
+        normalized = str(metadata.get("fsr_profile_id") or metadata.get("fsr4_bundle_id") or "").strip()
+        return normalized or None
+
     def _normalize_game_name(self, name: str | None) -> str:
         normalized = unicodedata.normalize("NFKD", str(name or ""))
         normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
@@ -288,12 +312,13 @@ class Plugin:
     def _managed_optiscaler_config_contents(
         self,
         *,
-        enable_fsr4: bool = False,
+        fsr_profile_id: str | None = None,
         enable_optipatcher: bool = False,
         overrides: dict[str, dict[str, str]] | None = None,
     ) -> str:
         sections: dict[str, dict[str, str]] = {}
-        if enable_fsr4:
+        fsr_profile = self._fsr_profile(fsr_profile_id)
+        if fsr_profile:
             sections.update(
                 {
                     "FSR": {
@@ -316,8 +341,8 @@ class Plugin:
             sections.setdefault(section_name, {}).update(section_values)
 
         lines = ["; Managed by Decky DLSS Enabler"]
-        if enable_fsr4:
-            lines.append("; Experimental FSR4 INT8 sidecar support")
+        if fsr_profile:
+            lines.append(f"; Managed FSR profile: {fsr_profile['label']}")
         if enable_optipatcher:
             lines.append("; OptiPatcher ASI plugin enabled")
         lines.append("")
@@ -363,22 +388,26 @@ class Plugin:
             )
         return asset_path
 
-    def _verify_fsr4_bundle_assets(self) -> list[dict]:
+    def _verify_fsr_profile_assets(self, fsr_profile_id: str) -> tuple[dict, list[dict]]:
+        fsr_profile = self._fsr_profile(fsr_profile_id)
+        if not fsr_profile:
+            raise ValueError(f"Unsupported FSR profile '{fsr_profile_id}'")
+
         verified_assets: list[dict] = []
-        for asset in FSR4_INT8_BUNDLE["assets"]:
+        for asset in fsr_profile["assets"]:
             asset_path = self._bundled_sidecar_asset_path(asset["asset_name"])
             if not asset_path.exists():
-                raise FileNotFoundError(f"Bundled FSR4 sidecar asset missing: {asset_path}")
+                raise FileNotFoundError(f"Bundled FSR profile asset missing: {asset_path}")
 
             asset_hash = self._file_sha256(asset_path)
-            self._log(f"verify fsr4 asset: path={asset_path} sha256={asset_hash}")
+            self._log(f"verify fsr profile asset: profile={fsr_profile['id']} path={asset_path} sha256={asset_hash}")
             if asset_hash.lower() != asset["sha256"].lower():
                 raise RuntimeError(
-                    f"Bundled FSR4 sidecar hash mismatch for {asset_path.name}: expected {asset['sha256']}, got {asset_hash}"
+                    f"Bundled FSR profile hash mismatch for {asset_path.name}: expected {asset['sha256']}, got {asset_hash}"
                 )
 
             verified_assets.append({**asset, "path": asset_path})
-        return verified_assets
+        return fsr_profile, verified_assets
 
     def _verify_optipatcher_asset(self) -> dict:
         asset_path = self._bundled_sidecar_asset_path(OPTIPATCHER_PLUGIN["asset_name"])
@@ -686,6 +715,7 @@ class Plugin:
             "asset_version_token": parsed_name.get("asset_version_token"),
             "original_launch_options": "",
             "backup_created": False,
+            "fsr_profile_id": None,
             "fsr4_enabled": False,
             "fsr4_bundle_id": None,
             "optipatcher_enabled": False,
@@ -727,12 +757,12 @@ class Plugin:
         target_exe: Path | None,
         original_launch_options: str,
         backup_created: bool,
-        fsr4_enabled: bool = False,
-        fsr4_bundle_id: str | None = None,
+        fsr_profile_id: str | None = None,
         optipatcher_enabled: bool = False,
         optipatcher_id: str | None = None,
         managed_files: list[dict] | None = None,
     ) -> None:
+        normalized_fsr_profile_id = self._normalized_fsr_profile_id(fsr_profile_id)
         payload = {
             "appid": str(appid),
             "game_name": game_name,
@@ -747,8 +777,9 @@ class Plugin:
             "target_exe": str(target_exe) if target_exe else "",
             "original_launch_options": original_launch_options,
             "backup_created": bool(backup_created),
-            "fsr4_enabled": bool(fsr4_enabled),
-            "fsr4_bundle_id": fsr4_bundle_id if fsr4_enabled else None,
+            "fsr_profile_id": normalized_fsr_profile_id,
+            "fsr4_enabled": bool(normalized_fsr_profile_id),
+            "fsr4_bundle_id": normalized_fsr_profile_id,
             "optipatcher_enabled": bool(optipatcher_enabled),
             "optipatcher_id": optipatcher_id if optipatcher_enabled else None,
             "managed_files": managed_files or [],
@@ -874,21 +905,25 @@ class Plugin:
             "reinstall_recommended": any(value is False for value in integrity_values),
         }
 
-    def _fsr4_bundle_state(self, target_dir: Path, metadata: dict) -> dict:
-        expected_bundle_id = metadata.get("fsr4_bundle_id")
+    def _fsr_profile_state(self, target_dir: Path, metadata: dict) -> dict:
+        fsr_profile_id = self._marker_fsr_profile_id(metadata)
+        fsr_profile = self._fsr_profile(fsr_profile_id)
         expected_files = [
             managed_file
             for managed_file in (metadata.get("managed_files") or [])
             if managed_file.get("kind") in {"ffx-loader", "fsr4-upscaler", "optiscaler-config"}
         ]
         feature_state = self._managed_feature_file_state(expected_files)
-        fsr4_enabled = bool(metadata.get("fsr4_enabled") or expected_bundle_id)
+        fsr_enabled = bool(fsr_profile_id)
 
         return {
-            "fsr4_enabled": fsr4_enabled,
-            "fsr4_bundle_id": expected_bundle_id,
-            "fsr4_label": FSR4_INT8_BUNDLE["label"] if fsr4_enabled else None,
-            "fsr4_optiscaler_version": FSR4_INT8_BUNDLE["optiscaler_version"] if fsr4_enabled else None,
+            "fsr_profile_id": fsr_profile_id,
+            "fsr_profile_label": fsr_profile.get("label") if fsr_profile else None,
+            "fsr_profile_family": fsr_profile.get("family") if fsr_profile else None,
+            "fsr4_enabled": fsr_enabled,
+            "fsr4_bundle_id": fsr_profile_id,
+            "fsr4_label": fsr_profile.get("label") if fsr_profile else None,
+            "fsr4_optiscaler_version": fsr_profile.get("optiscaler_version") if fsr_profile else None,
             "fsr4_files_present": feature_state["files_present"],
             "fsr4_files_complete": feature_state["files_complete"],
             "fsr4_integrity_ok": feature_state["integrity_ok"],
@@ -921,14 +956,15 @@ class Plugin:
         self,
         target_dir: Path,
         *,
-        enable_fsr4: bool = False,
+        fsr_profile_id: str | None = None,
         enable_optipatcher: bool = False,
         config_overrides: dict[str, dict[str, str]] | None = None,
     ) -> list[dict]:
         managed_files: list[dict] = []
+        normalized_fsr_profile_id = self._normalized_fsr_profile_id(fsr_profile_id)
 
-        if enable_fsr4:
-            verified_assets = self._verify_fsr4_bundle_assets()
+        if normalized_fsr_profile_id:
+            _, verified_assets = self._verify_fsr_profile_assets(normalized_fsr_profile_id)
             for asset in verified_assets:
                 target_path = target_dir / asset["target_name"]
                 backup_created = self._prepare_managed_file(target_path, asset["sha256"])
@@ -936,7 +972,7 @@ class Plugin:
                 copied_hash = self._file_sha256(target_path)
                 if copied_hash.lower() != asset["sha256"].lower():
                     raise RuntimeError(
-                        f"Copied FSR4 sidecar hash mismatch for {target_path.name}: expected {asset['sha256']}, got {copied_hash}"
+                        f"Copied FSR profile asset hash mismatch for {target_path.name}: expected {asset['sha256']}, got {copied_hash}"
                     )
                 managed_files.append(
                     {
@@ -972,10 +1008,10 @@ class Plugin:
                 }
             )
 
-        if enable_fsr4 or enable_optipatcher:
+        if normalized_fsr_profile_id or enable_optipatcher:
             config_path = target_dir / FSR4_CONFIG_FILENAME
             config_text = self._managed_optiscaler_config_contents(
-                enable_fsr4=enable_fsr4,
+                fsr_profile_id=normalized_fsr_profile_id,
                 enable_optipatcher=enable_optipatcher,
                 overrides=config_overrides,
             )
@@ -1303,7 +1339,7 @@ class Plugin:
             proxy_path = target_dir / proxy_filename
             patched = proxy_path.exists() or proxy_path.is_symlink()
             asset_state = self._installed_asset_state(proxy_path, metadata)
-            fsr4_state = self._fsr4_bundle_state(target_dir, metadata)
+            fsr4_state = self._fsr_profile_state(target_dir, metadata)
             optipatcher_state = self._optipatcher_state(target_dir, metadata)
             self._log(f"get_game_status marker metadata: {json.dumps(metadata, sort_keys=True)}")
             self._log(f"get_game_status asset state: {json.dumps(asset_state, sort_keys=True)}")
@@ -1351,6 +1387,9 @@ class Plugin:
                 "upgrade_available": asset_state["upgrade_available"],
                 "reinstall_recommended": asset_state["reinstall_recommended"],
                 "integrity_ok": asset_state["integrity_ok"],
+                "fsr_profile_id": fsr4_state["fsr_profile_id"],
+                "fsr_profile_label": fsr4_state["fsr_profile_label"],
+                "fsr_profile_family": fsr4_state["fsr_profile_family"],
                 "fsr4_enabled": fsr4_state["fsr4_enabled"],
                 "fsr4_bundle_id": fsr4_state["fsr4_bundle_id"],
                 "fsr4_label": fsr4_state["fsr4_label"],
@@ -1382,7 +1421,7 @@ class Plugin:
         appid: str,
         method: str,
         current_launch_options: str = "",
-        enable_fsr4: bool = False,
+        fsr_profile_id: str | None = None,
         apply_recommendations: bool = False,
         enable_optipatcher: bool = False,
     ) -> dict:
@@ -1397,11 +1436,13 @@ class Plugin:
             effective_method = requested_method
             if apply_recommendations and quirks.get("recommended_method"):
                 effective_method = self._normalize_method(str(quirks.get("recommended_method")))
+            normalized_fsr_profile_id = self._normalized_fsr_profile_id(fsr_profile_id)
             effective_optipatcher = bool(enable_optipatcher or (apply_recommendations and quirks.get("recommended_optipatcher")))
+            effective_fsr_profile = self._fsr_profile(normalized_fsr_profile_id)
 
             self._log(
                 f"patch_game start: appid={appid} requested_method={requested_method} effective_method={effective_method} "
-                f"enable_fsr4={enable_fsr4} enable_optipatcher={effective_optipatcher} apply_recommendations={apply_recommendations} "
+                f"fsr_profile_id={normalized_fsr_profile_id} enable_optipatcher={effective_optipatcher} apply_recommendations={apply_recommendations} "
                 f"original_launch_options={json.dumps(current_launch_options)}"
             )
 
@@ -1442,10 +1483,10 @@ class Plugin:
 
             managed_files: list[dict] = []
             config_overrides = quirks.get("recommended_optiscaler_ini_overrides") if apply_recommendations else None
-            if enable_fsr4 or effective_optipatcher:
+            if normalized_fsr_profile_id or effective_optipatcher:
                 managed_files = self._install_managed_optiscaler_support(
                     target_dir,
-                    enable_fsr4=enable_fsr4,
+                    fsr_profile_id=normalized_fsr_profile_id,
                     enable_optipatcher=effective_optipatcher,
                     config_overrides=config_overrides,
                 )
@@ -1461,8 +1502,7 @@ class Plugin:
                 target_exe=target_exe,
                 original_launch_options=original_launch_options,
                 backup_created=backup_created,
-                fsr4_enabled=enable_fsr4,
-                fsr4_bundle_id=FSR4_INT8_BUNDLE["id"] if enable_fsr4 else None,
+                fsr_profile_id=normalized_fsr_profile_id,
                 optipatcher_enabled=effective_optipatcher,
                 optipatcher_id=OPTIPATCHER_PLUGIN["id"] if effective_optipatcher else None,
                 managed_files=managed_files,
@@ -1481,9 +1521,11 @@ class Plugin:
                 "marker_name": marker_path.name,
                 "bundled_asset_version": DLSS_ENABLER_VERSION,
                 "bundled_asset_sha256": BUNDLED_ASSET_SHA256,
-                "fsr4_enabled": enable_fsr4,
-                "fsr4_bundle_id": FSR4_INT8_BUNDLE["id"] if enable_fsr4 else None,
-                "fsr4_label": FSR4_INT8_BUNDLE["label"] if enable_fsr4 else None,
+                "fsr_profile_id": normalized_fsr_profile_id,
+                "fsr_profile_label": effective_fsr_profile["label"] if effective_fsr_profile else None,
+                "fsr4_enabled": bool(normalized_fsr_profile_id),
+                "fsr4_bundle_id": normalized_fsr_profile_id,
+                "fsr4_label": effective_fsr_profile["label"] if effective_fsr_profile else None,
                 "optipatcher_enabled": effective_optipatcher,
                 "optipatcher_id": OPTIPATCHER_PLUGIN["id"] if effective_optipatcher else None,
                 "optipatcher_label": OPTIPATCHER_PLUGIN["label"] if effective_optipatcher else None,
@@ -1496,12 +1538,12 @@ class Plugin:
                         + ", ".join(
                             component
                             for component in [
-                                FSR4_INT8_BUNDLE["label"] if enable_fsr4 else "",
+                                effective_fsr_profile["label"] if effective_fsr_profile else "",
                                 OPTIPATCHER_PLUGIN["label"] if effective_optipatcher else "",
                             ]
                             if component
                         )
-                        if (enable_fsr4 or effective_optipatcher)
+                        if (effective_fsr_profile or effective_optipatcher)
                         else ""
                     )
                     + "."

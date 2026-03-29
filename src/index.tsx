@@ -44,6 +44,9 @@ type GameStatusResponse = {
   upgrade_available?: boolean;
   reinstall_recommended?: boolean;
   integrity_ok?: boolean | null;
+  fsr_profile_id?: string | null;
+  fsr_profile_label?: string | null;
+  fsr_profile_family?: string | null;
   fsr4_enabled?: boolean;
   fsr4_bundle_id?: string | null;
   fsr4_label?: string | null;
@@ -82,6 +85,8 @@ type PatchResponse = {
   marker_name?: string;
   bundled_asset_version?: string;
   bundled_asset_sha256?: string;
+  fsr_profile_id?: string | null;
+  fsr_profile_label?: string | null;
   fsr4_enabled?: boolean;
   fsr4_bundle_id?: string | null;
   fsr4_label?: string | null;
@@ -123,10 +128,15 @@ const METHOD_OPTIONS = [
   { value: "dbghelp", label: "dbghelp.dll", hint: "Use for Debug Help Library hook paths." },
 ] as const;
 
+const FSR_PROFILE_OPTIONS = [
+  { value: "disabled", label: "Disabled", hint: "Do not install managed FSR sidecar files." },
+  { value: "fsr4-int8-4.0.2b-opti-0.7.9", label: "FSR4 INT8 4.0.2b (RDNA2&3)", hint: "Community INT8 build for older RDNA2 and RDNA3 GPUs." },
+] as const;
+
 const listInstalledGames = callable<[], GameListResponse>("list_installed_games");
 const getGameStatus = callable<[appid: string], GameStatusResponse>("get_game_status");
 const patchGame = callable<
-  [appid: string, method: string, currentLaunchOptions: string, enableFsr4: boolean, applyRecommendations: boolean, enableOptiPatcher: boolean],
+  [appid: string, method: string, currentLaunchOptions: string, fsrProfileId: string | null, applyRecommendations: boolean, enableOptiPatcher: boolean],
   PatchResponse
 >("patch_game");
 const unpatchGame = callable<[appid: string], UnpatchResponse>("unpatch_game");
@@ -163,7 +173,7 @@ const setAppLaunchOptions = (appid: number, launchOptions: string) => {
 
 let lastSelectedAppId = "";
 let lastSelectedMethod = "dxgi";
-let lastSelectedFsr4 = "disabled";
+let lastSelectedFsrProfile = "disabled";
 let lastSelectedOptiPatcher = "disabled";
 let lastApplyRecommendations = "disabled";
 
@@ -172,7 +182,7 @@ function Content() {
   const [gamesLoading, setGamesLoading] = useState(true);
   const [selectedAppId, setSelectedAppId] = useState<string>(() => lastSelectedAppId);
   const [selectedMethod, setSelectedMethod] = useState<string>(() => lastSelectedMethod);
-  const [selectedFsr4, setSelectedFsr4] = useState<string>(() => lastSelectedFsr4);
+  const [selectedFsrProfile, setSelectedFsrProfile] = useState<string>(() => lastSelectedFsrProfile);
   const [selectedOptiPatcher, setSelectedOptiPatcher] = useState<string>(() => lastSelectedOptiPatcher);
   const [applyRecommendations, setApplyRecommendations] = useState<string>(() => lastApplyRecommendations);
   const [status, setStatus] = useState<GameStatusResponse | null>(null);
@@ -228,9 +238,9 @@ function Content() {
         setSelectedMethod(result.method);
       }
       if (result.status === "success") {
-        const nextFsr4 = result.fsr4_enabled ? "enabled" : "disabled";
-        lastSelectedFsr4 = nextFsr4;
-        setSelectedFsr4(nextFsr4);
+        const nextFsrProfile = result.fsr_profile_id || "disabled";
+        lastSelectedFsrProfile = nextFsrProfile;
+        setSelectedFsrProfile(nextFsrProfile);
         const nextOptiPatcher = result.optipatcher_enabled ? "enabled" : "disabled";
         lastSelectedOptiPatcher = nextOptiPatcher;
         setSelectedOptiPatcher(nextOptiPatcher);
@@ -293,6 +303,10 @@ function Content() {
     ),
     [effectiveIniOverrides],
   );
+  const selectedFsrProfileOption = useMemo(
+    () => FSR_PROFILE_OPTIONS.find((entry) => entry.value === selectedFsrProfile) ?? FSR_PROFILE_OPTIONS[0],
+    [selectedFsrProfile],
+  );
   const injectionMethodDescription = useMemo(() => {
     if (applyRecommendationsEnabled && status?.recommended_method) {
       return `Using ${effectiveMethodLabel} (recommended). Turn recommendations off to choose manually.`;
@@ -311,7 +325,7 @@ function Content() {
 
   const patchButtonLabel = useMemo(() => {
     const selectedComponents = [
-      selectedFsr4 === "enabled" ? "FSR4 INT8 4.0.2b" : null,
+      selectedFsrProfileOption.value !== "disabled" ? selectedFsrProfileOption.label : null,
       effectiveOptiPatcherEnabled ? "OptiPatcher" : null,
     ].filter(Boolean);
     const suffix = selectedComponents.length ? ` + ${selectedComponents.join(" + ")}` : "";
@@ -323,7 +337,7 @@ function Content() {
     if (status?.upgrade_available) return `Upgrade to ${status.bundled_asset_version ?? effectiveMethodLabel}`;
     if (status?.marker_name) return `Reinstall ${effectiveMethodLabel}${suffix}`;
     return `Patch with ${effectiveMethodLabel}${suffix}`;
-  }, [busyAction, effectiveMethod, effectiveMethodLabel, effectiveOptiPatcherEnabled, selectedFsr4, selectedGame, status]);
+  }, [busyAction, effectiveMethod, effectiveMethodLabel, effectiveOptiPatcherEnabled, selectedFsrProfileOption, selectedGame, status]);
 
   const handlePatch = useCallback(async () => {
     if (!selectedGame || !selectedAppId) return;
@@ -336,7 +350,7 @@ function Content() {
         selectedAppId,
         selectedMethod,
         currentLaunchOptions,
-        selectedFsr4 === "enabled",
+        selectedFsrProfile === "disabled" ? null : selectedFsrProfile,
         applyRecommendationsEnabled,
         selectedOptiPatcher === "enabled",
       );
@@ -358,7 +372,7 @@ function Content() {
     } finally {
       setBusyAction(null);
     }
-  }, [applyRecommendationsEnabled, effectiveMethodLabel, loadStatus, selectedAppId, selectedFsr4, selectedGame, selectedMethod, selectedOptiPatcher]);
+  }, [applyRecommendationsEnabled, effectiveMethodLabel, loadStatus, selectedAppId, selectedFsrProfile, selectedGame, selectedMethod, selectedOptiPatcher]);
 
   const handleUnpatch = useCallback(async () => {
     if (!selectedGame || !selectedAppId) return;
@@ -402,14 +416,14 @@ function Content() {
     return { text, color: "#3fb950" };
   }, [selectedGame, status]);
 
-  const fsr4Display = useMemo(() => {
+  const fsrProfileDisplay = useMemo(() => {
     if (!selectedGame || status?.status !== "success") {
       return { text: "—", color: undefined as string | undefined };
     }
-    if (!status.fsr4_enabled) {
+    if (!status.fsr_profile_id) {
       return { text: "Disabled", color: undefined as string | undefined };
     }
-    const text = status.fsr4_label || "FSR4 INT8 4.0.2b";
+    const text = status.fsr_profile_label || status.fsr4_label || status.fsr_profile_id;
     if (status.fsr4_reinstall_recommended) {
       return { text, color: "#ff7b72" };
     }
@@ -446,8 +460,8 @@ function Content() {
     if (status.reinstall_recommended || status.upgrade_available || status.fsr4_reinstall_recommended || status.optipatcher_reinstall_recommended) {
       return status.message || "An update is available.";
     }
-    if (status.fsr4_enabled && !status.fsr4_files_complete) {
-      return "FSR4 sidecar files are expected but incomplete. Reinstall recommended.";
+    if (status.fsr_profile_id && !status.fsr4_files_complete) {
+      return "Managed FSR profile files are expected but incomplete. Reinstall recommended.";
     }
     if (status.optipatcher_enabled && !status.optipatcher_files_complete) {
       return "OptiPatcher files are expected but incomplete. Reinstall recommended.";
@@ -539,10 +553,10 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field {...focusableFieldProps} label="FSR4 sidecar">
-          {fsr4Display.color ? (
-            <span style={{ color: fsr4Display.color, fontWeight: 600 }}>{fsr4Display.text}</span>
-          ) : fsr4Display.text}
+        <Field {...focusableFieldProps} label="Managed FSR profile">
+          {fsrProfileDisplay.color ? (
+            <span style={{ color: fsrProfileDisplay.color, fontWeight: 600 }}>{fsrProfileDisplay.text}</span>
+          ) : fsrProfileDisplay.text}
         </Field>
       </PanelSectionRow>
 
@@ -557,7 +571,7 @@ function Content() {
       <PanelSectionRow>
         <Field {...focusableFieldProps} label="OptiScaler base">
           {selectedGame && status?.status === "success"
-            ? (status.fsr4_enabled ? (status.fsr4_optiscaler_version || "0.7.9") : "—")
+            ? ((status.fsr_profile_id || status.optipatcher_enabled) ? (status.fsr4_optiscaler_version || "0.7.9") : "—")
             : "—"}
         </Field>
       </PanelSectionRow>
@@ -601,7 +615,7 @@ function Content() {
         </PanelSectionRow>
       ) : null}
 
-      {applyRecommendationsEnabled && selectedFsr4 === "enabled" && effectiveIniOverrideLines.length ? (
+      {applyRecommendationsEnabled && (selectedFsrProfile !== "disabled" || effectiveOptiPatcherEnabled) && effectiveIniOverrideLines.length ? (
         <PanelSectionRow>
           <Field {...focusableFieldProps} label="Additional OptiScaler.ini overrides">
             <div>
@@ -614,14 +628,17 @@ function Content() {
       ) : null}
 
       <PanelSectionRow>
-        <ToggleField
-          label="FSR4 INT8 sidecar"
-          description="Experimental: installs OptiScaler 0.7.9 FFX sidecar files plus FSR4 INT8 4.0.2b."
-          checked={selectedFsr4 === "enabled"}
-          onChange={(checked) => {
-            const nextValue = checked ? "enabled" : "disabled";
-            lastSelectedFsr4 = nextValue;
-            setSelectedFsr4(nextValue);
+        <DropdownItem
+          label="Managed FSR profile"
+          description={selectedFsrProfileOption.hint}
+          menuLabel="Managed FSR profile"
+          strDefaultLabel="Choose FSR profile"
+          selectedOption={selectedFsrProfile}
+          rgOptions={FSR_PROFILE_OPTIONS.map((entry) => ({ data: entry.value, label: entry.label }))}
+          onChange={(option) => {
+            const nextValue = String(option.data);
+            lastSelectedFsrProfile = nextValue;
+            setSelectedFsrProfile(nextValue);
           }}
           disabled={!selectedGame || busyAction !== null}
         />

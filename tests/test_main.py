@@ -178,7 +178,11 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         }
 
         self.hash_patch = mock.patch.object(plugin_main, "BUNDLED_ASSET_SHA256", self.asset_hash)
-        self.fsr4_bundle_patch = mock.patch.object(plugin_main, "FSR4_INT8_BUNDLE", self.fake_fsr4_bundle)
+        self.fsr4_bundle_patch = mock.patch.dict(
+            plugin_main.MANAGED_FSR_PROFILES,
+            {self.fake_fsr4_bundle["id"]: self.fake_fsr4_bundle},
+            clear=True,
+        )
         self.optipatcher_patch = mock.patch.object(plugin_main, "OPTIPATCHER_PLUGIN", self.fake_optipatcher_plugin)
         self.version_map_patch = mock.patch.dict(plugin_main.KNOWN_DLSS_ENABLER_ASSETS_BY_VERSION, self.fake_assets_by_version, clear=True)
         self.sha_map_patch = mock.patch.dict(
@@ -448,7 +452,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.assertTrue(result["recommended_optipatcher"])
 
     def test_patch_game_with_fsr4_installs_sidecar_files_and_config(self):
-        result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True))
+        result = self.run_async(self.plugin.patch_game("123", "dxgi", "", self.fake_fsr4_bundle["id"]))
 
         self.assertEqual(result["status"], "success")
         self.assertTrue(result["fsr4_enabled"])
@@ -482,7 +486,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
                 }
             },
         ):
-            result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True))
+            result = self.run_async(self.plugin.patch_game("123", "dxgi", "", self.fake_fsr4_bundle["id"]))
 
         self.assertEqual(result["status"], "success")
         config_text = (self.target_dir / plugin_main.FSR4_CONFIG_FILENAME).read_text(encoding="utf-8")
@@ -506,7 +510,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
                 }
             },
         ):
-            result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True, True))
+            result = self.run_async(self.plugin.patch_game("123", "dxgi", "", self.fake_fsr4_bundle["id"], True))
 
         self.assertEqual(result["status"], "success")
         config_text = (self.target_dir / plugin_main.FSR4_CONFIG_FILENAME).read_text(encoding="utf-8")
@@ -514,7 +518,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.assertIn("Reflex=on", config_text)
 
     def test_patch_game_with_optipatcher_installs_plugin_and_config(self):
-        result = self.run_async(self.plugin.patch_game("123", "dxgi", "", False, False, True))
+        result = self.run_async(self.plugin.patch_game("123", "dxgi", "", None, False, True))
 
         self.assertEqual(result["status"], "success")
         self.assertTrue(result["optipatcher_enabled"])
@@ -543,7 +547,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
                 }
             },
         ):
-            result = self.run_async(self.plugin.patch_game("123", "winmm", "", False, True))
+            result = self.run_async(self.plugin.patch_game("123", "winmm", "", None, True))
 
         self.assertEqual(result["status"], "success")
         self.assertEqual(result["method"], "dxgi")
@@ -567,7 +571,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
                 }
             },
         ):
-            result = self.run_async(self.plugin.patch_game("123", "dxgi", "", False, True, False))
+            result = self.run_async(self.plugin.patch_game("123", "dxgi", "", None, True, False))
 
         self.assertEqual(result["status"], "success")
         self.assertTrue(result["optipatcher_enabled"])
@@ -577,7 +581,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         original_loader = self.target_dir / "amd_fidelityfx_dx12.dll"
         original_loader.write_bytes(b"original loader")
 
-        patch_result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True))
+        patch_result = self.run_async(self.plugin.patch_game("123", "dxgi", "", self.fake_fsr4_bundle["id"]))
         self.assertEqual(patch_result["status"], "success")
         self.assertEqual(original_loader.read_bytes(), self.sidecar_loader_bytes)
 
@@ -605,7 +609,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
             self.assertFalse((self.target_dir / filename).exists())
 
     def test_unpatch_removes_managed_optipatcher_and_empty_plugins_dir(self):
-        result = self.run_async(self.plugin.patch_game("123", "dxgi", "", False, False, True))
+        result = self.run_async(self.plugin.patch_game("123", "dxgi", "", None, False, True))
         self.assertEqual(result["status"], "success")
 
         plugins_dir = self.target_dir / "plugins"
@@ -618,7 +622,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.assertIn("Removed empty plugins directory", unpatch_result["notes"])
 
     def test_get_game_status_reports_fsr4_bundle_state(self):
-        patch_result = self.run_async(self.plugin.patch_game("123", "dxgi", "", True))
+        patch_result = self.run_async(self.plugin.patch_game("123", "dxgi", "", self.fake_fsr4_bundle["id"]))
         self.assertEqual(patch_result["status"], "success")
 
         status = self.run_async(self.plugin.get_game_status("123"))
@@ -630,7 +634,7 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.assertFalse(status["fsr4_reinstall_recommended"])
 
     def test_get_game_status_reports_optipatcher_state(self):
-        patch_result = self.run_async(self.plugin.patch_game("123", "dxgi", "", False, False, True))
+        patch_result = self.run_async(self.plugin.patch_game("123", "dxgi", "", None, False, True))
         self.assertEqual(patch_result["status"], "success")
 
         status = self.run_async(self.plugin.get_game_status("123"))
