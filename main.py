@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -49,6 +50,17 @@ FSR4_INT8_BUNDLE = {
             "kind": "fsr4-upscaler",
         },
     ],
+}
+OPTIPATCHER_PLUGIN = {
+    "id": "optipatcher-2026-03-27",
+    "label": "OptiPatcher",
+    "version": "2026-03-27",
+    "release_tag": "bins-optipatcher-3-27-2026",
+    "asset_name": "OptiPatcher.asi",
+    "target_dirname": "plugins",
+    "target_name": "OptiPatcher.asi",
+    "sha256": "001b419bf315da6b200b8c29bb69df37117d7efb1341dd77bdd943b22491ab36",
+    "kind": "optipatcher-plugin",
 }
 FSR4_CONFIG_FILENAME = "OptiScaler.ini"
 KNOWN_RUNTIME_ARTIFACT_FILENAMES = [
@@ -143,18 +155,180 @@ class Plugin:
     def _bundled_sidecar_asset_path(self, asset_name: str) -> Path:
         return self._plugin_bin_dir() / asset_name
 
-    def _fsr4_config_contents(self) -> str:
-        return (
-            "; Managed by Decky DLSS Enabler\n"
-            "; Experimental FSR4 INT8 sidecar support\n\n"
-            "[FSR]\n"
-            "Fsr4Update=true\n"
-            "FsrAgilitySDKUpgrade=auto\n\n"
-            "[Upscalers]\n"
-            "Dx12Upscaler=fsr31\n\n"
-            "[FrameGen]\n"
-            "FGType=Nukems\n"
-        )
+    def _quirks_db_path(self) -> Path:
+        return Path(__file__).parent / "py_modules" / "quirks_db.json"
+
+    def _load_quirks_db(self) -> dict:
+        return self._read_json_file(self._quirks_db_path())
+
+    def _normalized_optiscaler_ini_overrides(self, overrides: dict | None) -> dict[str, dict[str, str]]:
+        normalized: dict[str, dict[str, str]] = {}
+        if not isinstance(overrides, dict):
+            return normalized
+
+        for section_name, section_values in overrides.items():
+            normalized_section = str(section_name).strip().strip("[]")
+            if not normalized_section or not isinstance(section_values, dict):
+                continue
+
+            normalized_values: dict[str, str] = {}
+            for key, value in section_values.items():
+                normalized_key = str(key).strip()
+                if not normalized_key:
+                    continue
+                normalized_values[normalized_key] = str(value).strip()
+
+            if normalized_values:
+                normalized[normalized_section] = normalized_values
+
+        return normalized
+
+    def _normalize_game_name(self, name: str | None) -> str:
+        normalized = unicodedata.normalize("NFKD", str(name or ""))
+        normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+        normalized = normalized.lower().replace("&", " and ")
+        normalized = re.sub(r"[^a-z0-9]+", " ", normalized)
+        return " ".join(normalized.split())
+
+    def _entry_game_name_candidates(self, entry_key: str, entry: dict) -> list[str]:
+        candidates: list[str] = []
+        for value in [entry.get("steam_name"), entry.get("wiki_slug")]:
+            if value:
+                candidates.append(str(value).replace("-", " "))
+
+        for alias in entry.get("aliases") or []:
+            if alias:
+                candidates.append(str(alias))
+
+        if entry_key and not str(entry_key).isdigit():
+            candidates.append(str(entry_key).replace("-", " "))
+
+        normalized_candidates: list[str] = []
+        seen = set()
+        for candidate in candidates:
+            normalized = self._normalize_game_name(candidate)
+            if normalized and normalized not in seen:
+                normalized_candidates.append(normalized)
+                seen.add(normalized)
+        return normalized_candidates
+
+    def _entry_steam_appids(self, entry: dict) -> set[str]:
+        appids: set[str] = set()
+        for value in entry.get("steam_appids") or []:
+            normalized = str(value).strip()
+            if normalized:
+                appids.add(normalized)
+        return appids
+
+    def _game_quirks(self, appid: str, game_name: str | None = None) -> dict | None:
+        quirks_db = self._load_quirks_db()
+        games = quirks_db.get("games") if isinstance(quirks_db, dict) else None
+        if not isinstance(games, dict):
+            return None
+
+        normalized_appid = str(appid).strip()
+        entry = games.get(normalized_appid)
+        if isinstance(entry, dict):
+            return entry
+
+        for entry_value in games.values():
+            if not isinstance(entry_value, dict):
+                continue
+            if normalized_appid and normalized_appid in self._entry_steam_appids(entry_value):
+                return entry_value
+
+        normalized_game_name = self._normalize_game_name(game_name)
+        if not normalized_game_name:
+            return None
+
+        for entry_key, entry_value in games.items():
+            if not isinstance(entry_value, dict):
+                continue
+            if normalized_game_name in self._entry_game_name_candidates(str(entry_key), entry_value):
+                return entry_value
+
+        return None
+
+    def _game_quirks_payload(self, appid: str, game_name: str | None = None) -> dict:
+        entry = self._game_quirks(appid, game_name)
+        if not entry:
+            return {
+                "recommended_method": None,
+                "recommended_optipatcher": False,
+                "recommendation_source": None,
+                "recommendation_wiki_url": None,
+                "recommendation_notes": [],
+                "recommended_optiscaler_ini_overrides": {},
+            }
+
+        recommended_method = None
+        try:
+            if entry.get("recommended_method"):
+                recommended_method = self._normalize_method(str(entry.get("recommended_method")))
+        except Exception:
+            recommended_method = None
+
+        notes = [
+            str(note).strip()
+            for note in (entry.get("notes") or [])
+            if str(note).strip()
+        ]
+
+        return {
+            "recommended_method": recommended_method,
+            "recommended_optipatcher": bool(entry.get("recommended_optipatcher")),
+            "recommendation_source": str(entry.get("source") or "") or None,
+            "recommendation_wiki_url": str(entry.get("source_url") or "") or None,
+            "recommendation_notes": notes,
+            "recommended_optiscaler_ini_overrides": self._normalized_optiscaler_ini_overrides(
+                entry.get("recommended_optiscaler_ini_overrides")
+            ),
+        }
+
+    def _managed_optiscaler_config_contents(
+        self,
+        *,
+        enable_fsr4: bool = False,
+        enable_optipatcher: bool = False,
+        overrides: dict[str, dict[str, str]] | None = None,
+    ) -> str:
+        sections: dict[str, dict[str, str]] = {}
+        if enable_fsr4:
+            sections.update(
+                {
+                    "FSR": {
+                        "Fsr4Update": "true",
+                        "FsrAgilitySDKUpgrade": "auto",
+                    },
+                    "Upscalers": {
+                        "Dx12Upscaler": "fsr31",
+                    },
+                    "FrameGen": {
+                        "FGType": "Nukems",
+                    },
+                }
+            )
+
+        if enable_optipatcher:
+            sections.setdefault("Plugins", {})["LoadAsiPlugins"] = "true"
+
+        for section_name, section_values in self._normalized_optiscaler_ini_overrides(overrides).items():
+            sections.setdefault(section_name, {}).update(section_values)
+
+        lines = ["; Managed by Decky DLSS Enabler"]
+        if enable_fsr4:
+            lines.append("; Experimental FSR4 INT8 sidecar support")
+        if enable_optipatcher:
+            lines.append("; OptiPatcher ASI plugin enabled")
+        lines.append("")
+
+        for section_name, section_values in sections.items():
+            lines.append(f"[{section_name}]")
+            for key, value in section_values.items():
+                lines.append(f"{key}={value}")
+            lines.append("")
+
+        return "\n".join(lines).rstrip() + "\n"
 
     def _bytes_sha256(self, payload: bytes) -> str:
         digest = hashlib.sha256()
@@ -205,6 +379,20 @@ class Plugin:
 
             verified_assets.append({**asset, "path": asset_path})
         return verified_assets
+
+    def _verify_optipatcher_asset(self) -> dict:
+        asset_path = self._bundled_sidecar_asset_path(OPTIPATCHER_PLUGIN["asset_name"])
+        if not asset_path.exists():
+            raise FileNotFoundError(f"Bundled OptiPatcher asset missing: {asset_path}")
+
+        asset_hash = self._file_sha256(asset_path)
+        self._log(f"verify optipatcher asset: path={asset_path} sha256={asset_hash}")
+        if asset_hash.lower() != OPTIPATCHER_PLUGIN["sha256"].lower():
+            raise RuntimeError(
+                f"Bundled OptiPatcher hash mismatch for {asset_path.name}: expected {OPTIPATCHER_PLUGIN['sha256']}, got {asset_hash}"
+            )
+
+        return {**OPTIPATCHER_PLUGIN, "path": asset_path}
 
     def _read_json_file(self, path: Path) -> dict:
         if not path.exists():
@@ -500,6 +688,8 @@ class Plugin:
             "backup_created": False,
             "fsr4_enabled": False,
             "fsr4_bundle_id": None,
+            "optipatcher_enabled": False,
+            "optipatcher_id": None,
             "managed_files": [],
         }
         try:
@@ -539,6 +729,8 @@ class Plugin:
         backup_created: bool,
         fsr4_enabled: bool = False,
         fsr4_bundle_id: str | None = None,
+        optipatcher_enabled: bool = False,
+        optipatcher_id: str | None = None,
         managed_files: list[dict] | None = None,
     ) -> None:
         payload = {
@@ -557,6 +749,8 @@ class Plugin:
             "backup_created": bool(backup_created),
             "fsr4_enabled": bool(fsr4_enabled),
             "fsr4_bundle_id": fsr4_bundle_id if fsr4_enabled else None,
+            "optipatcher_enabled": bool(optipatcher_enabled),
+            "optipatcher_id": optipatcher_id if optipatcher_enabled else None,
             "managed_files": managed_files or [],
             "patched_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -645,9 +839,7 @@ class Plugin:
             "integrity_ok": integrity_ok,
         }
 
-    def _fsr4_bundle_state(self, target_dir: Path, metadata: dict) -> dict:
-        expected_bundle_id = metadata.get("fsr4_bundle_id")
-        expected_files = metadata.get("managed_files") or []
+    def _managed_feature_file_state(self, expected_files: list[dict]) -> dict:
         installed_files: list[dict] = []
         integrity_values: list[bool] = []
 
@@ -674,67 +866,138 @@ class Plugin:
                 }
             )
 
+        return {
+            "files": installed_files,
+            "files_present": any(entry["exists"] for entry in installed_files),
+            "files_complete": bool(installed_files) and all(entry["exists"] for entry in installed_files),
+            "integrity_ok": None if not installed_files else all(value is not False for value in integrity_values),
+            "reinstall_recommended": any(value is False for value in integrity_values),
+        }
+
+    def _fsr4_bundle_state(self, target_dir: Path, metadata: dict) -> dict:
+        expected_bundle_id = metadata.get("fsr4_bundle_id")
+        expected_files = [
+            managed_file
+            for managed_file in (metadata.get("managed_files") or [])
+            if managed_file.get("kind") in {"ffx-loader", "fsr4-upscaler", "optiscaler-config"}
+        ]
+        feature_state = self._managed_feature_file_state(expected_files)
         fsr4_enabled = bool(metadata.get("fsr4_enabled") or expected_bundle_id)
-        reinstall_recommended = any(value is False for value in integrity_values)
-        files_present = any(entry["exists"] for entry in installed_files)
-        files_complete = bool(installed_files) and all(entry["exists"] for entry in installed_files)
 
         return {
             "fsr4_enabled": fsr4_enabled,
             "fsr4_bundle_id": expected_bundle_id,
             "fsr4_label": FSR4_INT8_BUNDLE["label"] if fsr4_enabled else None,
             "fsr4_optiscaler_version": FSR4_INT8_BUNDLE["optiscaler_version"] if fsr4_enabled else None,
-            "fsr4_files_present": files_present,
-            "fsr4_files_complete": files_complete,
-            "fsr4_integrity_ok": None if not installed_files else all(value is not False for value in integrity_values),
-            "fsr4_reinstall_recommended": reinstall_recommended,
-            "fsr4_managed_files": installed_files,
+            "fsr4_files_present": feature_state["files_present"],
+            "fsr4_files_complete": feature_state["files_complete"],
+            "fsr4_integrity_ok": feature_state["integrity_ok"],
+            "fsr4_reinstall_recommended": feature_state["reinstall_recommended"],
+            "fsr4_managed_files": feature_state["files"],
         }
 
-    def _install_fsr4_bundle(self, target_dir: Path) -> list[dict]:
-        verified_assets = self._verify_fsr4_bundle_assets()
+    def _optipatcher_state(self, target_dir: Path, metadata: dict) -> dict:
+        expected_plugin_id = metadata.get("optipatcher_id")
+        expected_files = [
+            managed_file
+            for managed_file in (metadata.get("managed_files") or [])
+            if managed_file.get("kind") in {"optipatcher-plugin", "optiscaler-config"}
+        ]
+        feature_state = self._managed_feature_file_state(expected_files)
+        optipatcher_enabled = bool(metadata.get("optipatcher_enabled") or expected_plugin_id)
+
+        return {
+            "optipatcher_enabled": optipatcher_enabled,
+            "optipatcher_id": expected_plugin_id,
+            "optipatcher_label": OPTIPATCHER_PLUGIN["label"] if optipatcher_enabled else None,
+            "optipatcher_files_present": feature_state["files_present"],
+            "optipatcher_files_complete": feature_state["files_complete"],
+            "optipatcher_integrity_ok": feature_state["integrity_ok"],
+            "optipatcher_reinstall_recommended": feature_state["reinstall_recommended"],
+            "optipatcher_managed_files": feature_state["files"],
+        }
+
+    def _install_managed_optiscaler_support(
+        self,
+        target_dir: Path,
+        *,
+        enable_fsr4: bool = False,
+        enable_optipatcher: bool = False,
+        config_overrides: dict[str, dict[str, str]] | None = None,
+    ) -> list[dict]:
         managed_files: list[dict] = []
 
-        for asset in verified_assets:
-            target_path = target_dir / asset["target_name"]
-            backup_created = self._prepare_managed_file(target_path, asset["sha256"])
-            shutil.copy2(asset["path"], target_path)
+        if enable_fsr4:
+            verified_assets = self._verify_fsr4_bundle_assets()
+            for asset in verified_assets:
+                target_path = target_dir / asset["target_name"]
+                backup_created = self._prepare_managed_file(target_path, asset["sha256"])
+                shutil.copy2(asset["path"], target_path)
+                copied_hash = self._file_sha256(target_path)
+                if copied_hash.lower() != asset["sha256"].lower():
+                    raise RuntimeError(
+                        f"Copied FSR4 sidecar hash mismatch for {target_path.name}: expected {asset['sha256']}, got {copied_hash}"
+                    )
+                managed_files.append(
+                    {
+                        "kind": asset["kind"],
+                        "asset_name": asset["asset_name"],
+                        "target_name": asset["target_name"],
+                        "target_path": str(target_path),
+                        "sha256": asset["sha256"],
+                        "backup_created": backup_created,
+                    }
+                )
+
+        if enable_optipatcher:
+            verified_optipatcher = self._verify_optipatcher_asset()
+            plugins_dir = target_dir / verified_optipatcher["target_dirname"]
+            plugins_dir.mkdir(parents=True, exist_ok=True)
+            target_path = plugins_dir / verified_optipatcher["target_name"]
+            backup_created = self._prepare_managed_file(target_path, verified_optipatcher["sha256"])
+            shutil.copy2(verified_optipatcher["path"], target_path)
             copied_hash = self._file_sha256(target_path)
-            if copied_hash.lower() != asset["sha256"].lower():
+            if copied_hash.lower() != verified_optipatcher["sha256"].lower():
                 raise RuntimeError(
-                    f"Copied FSR4 sidecar hash mismatch for {target_path.name}: expected {asset['sha256']}, got {copied_hash}"
+                    f"Copied OptiPatcher hash mismatch for {target_path.name}: expected {verified_optipatcher['sha256']}, got {copied_hash}"
                 )
             managed_files.append(
                 {
-                    "kind": asset["kind"],
-                    "asset_name": asset["asset_name"],
-                    "target_name": asset["target_name"],
+                    "kind": verified_optipatcher["kind"],
+                    "asset_name": verified_optipatcher["asset_name"],
+                    "target_name": verified_optipatcher["target_name"],
                     "target_path": str(target_path),
-                    "sha256": asset["sha256"],
+                    "sha256": verified_optipatcher["sha256"],
                     "backup_created": backup_created,
                 }
             )
 
-        config_path = target_dir / FSR4_CONFIG_FILENAME
-        config_bytes = self._fsr4_config_contents().encode("utf-8")
-        config_sha256 = self._bytes_sha256(config_bytes)
-        config_backup_created = self._prepare_managed_file(config_path, config_sha256)
-        config_path.write_text(self._fsr4_config_contents(), encoding="utf-8")
-        written_config_sha256 = self._file_sha256(config_path)
-        if written_config_sha256.lower() != config_sha256.lower():
-            raise RuntimeError(
-                f"Copied FSR4 config hash mismatch for {config_path.name}: expected {config_sha256}, got {written_config_sha256}"
+        if enable_fsr4 or enable_optipatcher:
+            config_path = target_dir / FSR4_CONFIG_FILENAME
+            config_text = self._managed_optiscaler_config_contents(
+                enable_fsr4=enable_fsr4,
+                enable_optipatcher=enable_optipatcher,
+                overrides=config_overrides,
             )
-        managed_files.append(
-            {
-                "kind": "optiscaler-config",
-                "asset_name": FSR4_CONFIG_FILENAME,
-                "target_name": FSR4_CONFIG_FILENAME,
-                "target_path": str(config_path),
-                "sha256": config_sha256,
-                "backup_created": config_backup_created,
-            }
-        )
+            config_bytes = config_text.encode("utf-8")
+            config_sha256 = self._bytes_sha256(config_bytes)
+            config_backup_created = self._prepare_managed_file(config_path, config_sha256)
+            config_path.write_text(config_text, encoding="utf-8")
+            written_config_sha256 = self._file_sha256(config_path)
+            if written_config_sha256.lower() != config_sha256.lower():
+                raise RuntimeError(
+                    f"Copied managed OptiScaler config hash mismatch for {config_path.name}: expected {config_sha256}, got {written_config_sha256}"
+                )
+            managed_files.append(
+                {
+                    "kind": "optiscaler-config",
+                    "asset_name": FSR4_CONFIG_FILENAME,
+                    "target_name": FSR4_CONFIG_FILENAME,
+                    "target_path": str(config_path),
+                    "sha256": config_sha256,
+                    "backup_created": config_backup_created,
+                }
+            )
 
         return managed_files
 
@@ -846,6 +1109,17 @@ class Plugin:
 
         return notes
 
+    def _cleanup_empty_plugins_dir(self, target_dir: Path) -> list[str]:
+        notes: list[str] = []
+        plugins_dir = target_dir / OPTIPATCHER_PLUGIN["target_dirname"]
+        try:
+            if plugins_dir.exists() and plugins_dir.is_dir() and not any(plugins_dir.iterdir()):
+                plugins_dir.rmdir()
+                notes.append(f"Removed empty {plugins_dir.name} directory")
+        except Exception as exc:
+            self._log(f"failed to clean empty plugins dir {plugins_dir}: {exc}")
+        return notes
+
     def _cleanup_install_root(self, install_root: Path) -> dict:
         marker_paths = self._find_markers_under_install_root(install_root)
         notes: list[str] = []
@@ -881,6 +1155,7 @@ class Plugin:
 
             notes.extend(self._restore_method_in_dir(target_dir, method))
             notes.extend(self._cleanup_known_runtime_artifacts(target_dir))
+            notes.extend(self._cleanup_empty_plugins_dir(target_dir))
             cleaned_methods.append(method)
             self._log_target_state("cleanup after restore", target_dir, method)
             try:
@@ -963,6 +1238,7 @@ class Plugin:
             self._log(f"get_game_status start: appid={appid}")
             game_info = self._game_record(str(appid))
             game_name = game_info["name"] if game_info else str(appid)
+            quirks = self._game_quirks_payload(str(appid), game_name)
             if not game_info:
                 return {
                     "status": "success",
@@ -972,7 +1248,10 @@ class Plugin:
                     "patched": False,
                     "method": None,
                     "proxy_filename": None,
+                    "fsr4_enabled": False,
+                    "optipatcher_enabled": False,
                     "message": "Game install path could not be resolved.",
+                    **quirks,
                 }
 
             install_root = Path(game_info["install_path"])
@@ -985,10 +1264,13 @@ class Plugin:
                     "patched": False,
                     "method": None,
                     "proxy_filename": None,
+                    "fsr4_enabled": False,
+                    "optipatcher_enabled": False,
                     "message": "Game install directory does not exist.",
                     "paths": {
                         "install_root": str(install_root),
                     },
+                    **quirks,
                 }
 
             target_dir, target_exe = self._guess_patch_target(game_info)
@@ -1003,12 +1285,14 @@ class Plugin:
                     "method": None,
                     "proxy_filename": None,
                     "fsr4_enabled": False,
+                    "optipatcher_enabled": False,
                     "message": "This game is not currently patched.",
                     "paths": {
                         "install_root": str(install_root),
                         "target_dir": str(target_dir),
                         "target_exe": str(target_exe) if target_exe else "",
                     },
+                    **quirks,
                 }
 
             marker = markers[0]
@@ -1020,9 +1304,11 @@ class Plugin:
             patched = proxy_path.exists() or proxy_path.is_symlink()
             asset_state = self._installed_asset_state(proxy_path, metadata)
             fsr4_state = self._fsr4_bundle_state(target_dir, metadata)
+            optipatcher_state = self._optipatcher_state(target_dir, metadata)
             self._log(f"get_game_status marker metadata: {json.dumps(metadata, sort_keys=True)}")
             self._log(f"get_game_status asset state: {json.dumps(asset_state, sort_keys=True)}")
             self._log(f"get_game_status fsr4 state: {json.dumps(fsr4_state, sort_keys=True)}")
+            self._log(f"get_game_status optipatcher state: {json.dumps(optipatcher_state, sort_keys=True)}")
             self._log_target_state("get_game_status", target_dir, method)
 
             if not patched:
@@ -1034,6 +1320,8 @@ class Plugin:
                 message = (
                     f"Patched using {proxy_filename}. Upgrade available: {installed_version} → {DLSS_ENABLER_VERSION}."
                 )
+            elif optipatcher_state["optipatcher_reinstall_recommended"]:
+                message = f"Patched using {proxy_filename}, but the managed OptiPatcher files do not match the recorded assets. Reinstall recommended."
             else:
                 installed_version = asset_state.get("installed_asset_version") or asset_state.get("marker_asset_version")
                 message = (
@@ -1071,26 +1359,51 @@ class Plugin:
                 "fsr4_files_complete": fsr4_state["fsr4_files_complete"],
                 "fsr4_integrity_ok": fsr4_state["fsr4_integrity_ok"],
                 "fsr4_reinstall_recommended": fsr4_state["fsr4_reinstall_recommended"],
+                "optipatcher_enabled": optipatcher_state["optipatcher_enabled"],
+                "optipatcher_id": optipatcher_state["optipatcher_id"],
+                "optipatcher_label": optipatcher_state["optipatcher_label"],
+                "optipatcher_files_present": optipatcher_state["optipatcher_files_present"],
+                "optipatcher_files_complete": optipatcher_state["optipatcher_files_complete"],
+                "optipatcher_integrity_ok": optipatcher_state["optipatcher_integrity_ok"],
+                "optipatcher_reinstall_recommended": optipatcher_state["optipatcher_reinstall_recommended"],
                 "paths": {
                     "install_root": str(install_root),
                     "target_dir": str(target_dir),
                     "target_exe": str(metadata.get("target_exe") or ""),
                 },
+                **quirks,
             }
         except Exception as exc:
             self._log(f"get_game_status failed for {appid}: {exc}")
             return {"status": "error", "message": str(exc)}
 
-    async def patch_game(self, appid: str, method: str, current_launch_options: str = "", enable_fsr4: bool = False) -> dict:
+    async def patch_game(
+        self,
+        appid: str,
+        method: str,
+        current_launch_options: str = "",
+        enable_fsr4: bool = False,
+        apply_recommendations: bool = False,
+        enable_optipatcher: bool = False,
+    ) -> dict:
         try:
-            normalized_method = self._normalize_method(method)
-            self._log(
-                f"patch_game start: appid={appid} method={normalized_method} enable_fsr4={enable_fsr4} original_launch_options={json.dumps(current_launch_options)}"
-            )
+            requested_method = self._normalize_method(method)
             asset_path = self._verify_bundled_asset()
             game_info = self._game_record(str(appid))
             if not game_info:
                 return {"status": "error", "message": "Game install path could not be resolved."}
+
+            quirks = self._game_quirks_payload(str(appid), game_info["name"])
+            effective_method = requested_method
+            if apply_recommendations and quirks.get("recommended_method"):
+                effective_method = self._normalize_method(str(quirks.get("recommended_method")))
+            effective_optipatcher = bool(enable_optipatcher or (apply_recommendations and quirks.get("recommended_optipatcher")))
+
+            self._log(
+                f"patch_game start: appid={appid} requested_method={requested_method} effective_method={effective_method} "
+                f"enable_fsr4={enable_fsr4} enable_optipatcher={effective_optipatcher} apply_recommendations={apply_recommendations} "
+                f"original_launch_options={json.dumps(current_launch_options)}"
+            )
 
             if self._is_game_running(game_info):
                 return {"status": "error", "message": "Close the game before patching."}
@@ -1104,7 +1417,7 @@ class Plugin:
             self._log(
                 f"patch_game target selection: install_root={install_root} target_dir={target_dir} target_exe={target_exe}"
             )
-            self._log_target_state("patch before cleanup", target_dir, normalized_method)
+            self._log_target_state("patch before cleanup", target_dir, effective_method)
 
             cleanup_result = self._cleanup_install_root(install_root)
             original_launch_options = self._original_launch_options_to_restore(
@@ -1115,11 +1428,11 @@ class Plugin:
                 f"patch after cleanup: original_launch_options={json.dumps(original_launch_options)} cleanup_result={json.dumps(cleanup_result, sort_keys=True)}"
             )
 
-            backup_created = self._prepare_target_proxy(target_dir, normalized_method)
-            target_proxy_path = target_dir / f"{normalized_method}.dll"
+            backup_created = self._prepare_target_proxy(target_dir, effective_method)
+            target_proxy_path = target_dir / f"{effective_method}.dll"
             self._log(f"patch copy start: source={asset_path} target={target_proxy_path}")
             shutil.copy2(asset_path, target_proxy_path)
-            self._log_target_state("patch after copy", target_dir, normalized_method)
+            self._log_target_state("patch after copy", target_dir, effective_method)
 
             copied_hash = self._file_sha256(target_proxy_path)
             if copied_hash.lower() != BUNDLED_ASSET_SHA256.lower():
@@ -1128,47 +1441,70 @@ class Plugin:
                 )
 
             managed_files: list[dict] = []
-            if enable_fsr4:
-                managed_files = self._install_fsr4_bundle(target_dir)
-                self._log(f"patch installed fsr4 bundle: {json.dumps(managed_files, sort_keys=True)}")
+            config_overrides = quirks.get("recommended_optiscaler_ini_overrides") if apply_recommendations else None
+            if enable_fsr4 or effective_optipatcher:
+                managed_files = self._install_managed_optiscaler_support(
+                    target_dir,
+                    enable_fsr4=enable_fsr4,
+                    enable_optipatcher=effective_optipatcher,
+                    config_overrides=config_overrides,
+                )
+                self._log(f"patch installed managed OptiScaler support: {json.dumps(managed_files, sort_keys=True)}")
 
-            marker_path = target_dir / self._marker_filename(normalized_method)
+            marker_path = target_dir / self._marker_filename(effective_method)
             self._write_marker_metadata(
                 marker_path,
                 appid=str(appid),
                 game_name=game_info["name"],
-                method=normalized_method,
+                method=effective_method,
                 target_dir=target_dir,
                 target_exe=target_exe,
                 original_launch_options=original_launch_options,
                 backup_created=backup_created,
                 fsr4_enabled=enable_fsr4,
                 fsr4_bundle_id=FSR4_INT8_BUNDLE["id"] if enable_fsr4 else None,
+                optipatcher_enabled=effective_optipatcher,
+                optipatcher_id=OPTIPATCHER_PLUGIN["id"] if effective_optipatcher else None,
                 managed_files=managed_files,
             )
             self._log(f"patch wrote marker: {json.dumps(self._read_marker_metadata(marker_path), sort_keys=True)}")
 
-            managed_launch_options = self._build_managed_launch_options(normalized_method)
+            managed_launch_options = self._build_managed_launch_options(effective_method)
             self._log(f"patch managed launch options: {json.dumps(managed_launch_options)}")
 
             result = {
                 "status": "success",
                 "appid": str(appid),
                 "name": game_info["name"],
-                "method": normalized_method,
-                "proxy_filename": f"{normalized_method}.dll",
+                "method": effective_method,
+                "proxy_filename": f"{effective_method}.dll",
                 "marker_name": marker_path.name,
                 "bundled_asset_version": DLSS_ENABLER_VERSION,
                 "bundled_asset_sha256": BUNDLED_ASSET_SHA256,
                 "fsr4_enabled": enable_fsr4,
                 "fsr4_bundle_id": FSR4_INT8_BUNDLE["id"] if enable_fsr4 else None,
                 "fsr4_label": FSR4_INT8_BUNDLE["label"] if enable_fsr4 else None,
+                "optipatcher_enabled": effective_optipatcher,
+                "optipatcher_id": OPTIPATCHER_PLUGIN["id"] if effective_optipatcher else None,
+                "optipatcher_label": OPTIPATCHER_PLUGIN["label"] if effective_optipatcher else None,
                 "launch_options": managed_launch_options,
                 "original_launch_options": original_launch_options,
                 "message": (
-                    f"Patched {game_info['name']} using {normalized_method}.dll with {FSR4_INT8_BUNDLE['label']} sidecar files."
-                    if enable_fsr4
-                    else f"Patched {game_info['name']} using {normalized_method}.dll in the game directory."
+                    f"Patched {game_info['name']} using {effective_method}.dll"
+                    + (
+                        " with "
+                        + ", ".join(
+                            component
+                            for component in [
+                                FSR4_INT8_BUNDLE["label"] if enable_fsr4 else "",
+                                OPTIPATCHER_PLUGIN["label"] if effective_optipatcher else "",
+                            ]
+                            if component
+                        )
+                        if (enable_fsr4 or effective_optipatcher)
+                        else ""
+                    )
+                    + "."
                 ),
                 "paths": {
                     "install_root": str(install_root),
@@ -1178,7 +1514,7 @@ class Plugin:
                     "marker": str(marker_path),
                 },
             }
-            self._log_target_state("patch success final state", target_dir, normalized_method)
+            self._log_target_state("patch success final state", target_dir, effective_method)
             self._log(f"patch success: {json.dumps(result, sort_keys=True)}")
             return result
         except Exception as exc:

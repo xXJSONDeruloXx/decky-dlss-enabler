@@ -4,6 +4,7 @@ import {
   Field,
   PanelSection,
   PanelSectionRow,
+  ToggleField,
   staticClasses,
 } from "@decky/ui";
 import { callable, definePlugin, toaster } from "@decky/api";
@@ -51,6 +52,19 @@ type GameStatusResponse = {
   fsr4_files_complete?: boolean;
   fsr4_integrity_ok?: boolean | null;
   fsr4_reinstall_recommended?: boolean;
+  optipatcher_enabled?: boolean;
+  optipatcher_id?: string | null;
+  optipatcher_label?: string | null;
+  optipatcher_files_present?: boolean;
+  optipatcher_files_complete?: boolean;
+  optipatcher_integrity_ok?: boolean | null;
+  optipatcher_reinstall_recommended?: boolean;
+  recommended_method?: string | null;
+  recommended_optipatcher?: boolean;
+  recommendation_source?: string | null;
+  recommendation_wiki_url?: string | null;
+  recommendation_notes?: string[];
+  recommended_optiscaler_ini_overrides?: Record<string, Record<string, string>>;
   paths?: {
     install_root?: string;
     target_dir?: string;
@@ -71,6 +85,9 @@ type PatchResponse = {
   fsr4_enabled?: boolean;
   fsr4_bundle_id?: string | null;
   fsr4_label?: string | null;
+  optipatcher_enabled?: boolean;
+  optipatcher_id?: string | null;
+  optipatcher_label?: string | null;
   launch_options?: string;
   original_launch_options?: string;
   paths?: {
@@ -109,7 +126,7 @@ const METHOD_OPTIONS = [
 const listInstalledGames = callable<[], GameListResponse>("list_installed_games");
 const getGameStatus = callable<[appid: string], GameStatusResponse>("get_game_status");
 const patchGame = callable<
-  [appid: string, method: string, currentLaunchOptions: string, enableFsr4: boolean],
+  [appid: string, method: string, currentLaunchOptions: string, enableFsr4: boolean, applyRecommendations: boolean, enableOptiPatcher: boolean],
   PatchResponse
 >("patch_game");
 const unpatchGame = callable<[appid: string], UnpatchResponse>("unpatch_game");
@@ -147,6 +164,8 @@ const setAppLaunchOptions = (appid: number, launchOptions: string) => {
 let lastSelectedAppId = "";
 let lastSelectedMethod = "dxgi";
 let lastSelectedFsr4 = "disabled";
+let lastSelectedOptiPatcher = "disabled";
+let lastApplyRecommendations = "disabled";
 
 function Content() {
   const [games, setGames] = useState<GameInfo[]>([]);
@@ -154,6 +173,8 @@ function Content() {
   const [selectedAppId, setSelectedAppId] = useState<string>(() => lastSelectedAppId);
   const [selectedMethod, setSelectedMethod] = useState<string>(() => lastSelectedMethod);
   const [selectedFsr4, setSelectedFsr4] = useState<string>(() => lastSelectedFsr4);
+  const [selectedOptiPatcher, setSelectedOptiPatcher] = useState<string>(() => lastSelectedOptiPatcher);
+  const [applyRecommendations, setApplyRecommendations] = useState<string>(() => lastApplyRecommendations);
   const [status, setStatus] = useState<GameStatusResponse | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [busyAction, setBusyAction] = useState<"patch" | "unpatch" | null>(null);
@@ -210,6 +231,9 @@ function Content() {
         const nextFsr4 = result.fsr4_enabled ? "enabled" : "disabled";
         lastSelectedFsr4 = nextFsr4;
         setSelectedFsr4(nextFsr4);
+        const nextOptiPatcher = result.optipatcher_enabled ? "enabled" : "disabled";
+        lastSelectedOptiPatcher = nextOptiPatcher;
+        setSelectedOptiPatcher(nextOptiPatcher);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to load game status.";
@@ -236,26 +260,70 @@ function Content() {
     [games, selectedAppId],
   );
 
-  const selectedMethodLabel = useMemo(
-    () => METHOD_OPTIONS.find((entry) => entry.value === selectedMethod)?.label ?? `${selectedMethod}.dll`,
-    [selectedMethod],
+  const methodDropdownOptions = useMemo(
+    () => METHOD_OPTIONS.map((entry) => ({
+      data: entry.value,
+      label: entry.value === status?.recommended_method ? `${entry.label} (recommended)` : entry.label,
+    })),
+    [status?.recommended_method],
   );
+  const hasRecommendationNotes = Boolean(status?.recommendation_notes && status.recommendation_notes.length);
+  const hasApplicableRecommendations = Boolean(
+    status?.recommended_method ||
+    status?.recommended_optipatcher ||
+    (status?.recommended_optiscaler_ini_overrides && Object.keys(status.recommended_optiscaler_ini_overrides).length),
+  );
+  const applyRecommendationsEnabled = applyRecommendations === "enabled" && hasApplicableRecommendations;
+  const effectiveMethod = applyRecommendationsEnabled && status?.recommended_method
+    ? status.recommended_method
+    : selectedMethod;
+  const optiPatcherRecommended = applyRecommendationsEnabled && Boolean(status?.recommended_optipatcher);
+  const effectiveOptiPatcherEnabled = selectedOptiPatcher === "enabled" || optiPatcherRecommended;
+  const effectiveMethodLabel = useMemo(
+    () => METHOD_OPTIONS.find((entry) => entry.value === effectiveMethod)?.label ?? `${effectiveMethod}.dll`,
+    [effectiveMethod],
+  );
+  const effectiveIniOverrides = useMemo(
+    () => (applyRecommendationsEnabled ? (status?.recommended_optiscaler_ini_overrides ?? {}) : {}),
+    [applyRecommendationsEnabled, status?.recommended_optiscaler_ini_overrides],
+  );
+  const effectiveIniOverrideLines = useMemo(
+    () => Object.entries(effectiveIniOverrides).flatMap(([section, values]) =>
+      Object.entries(values).map(([key, value]) => `[${section}] ${key}=${value}`),
+    ),
+    [effectiveIniOverrides],
+  );
+  const injectionMethodDescription = useMemo(() => {
+    if (applyRecommendationsEnabled && status?.recommended_method) {
+      return `Using ${effectiveMethodLabel} (recommended). Turn recommendations off to choose manually.`;
+    }
+    return getMethodHint(selectedMethod);
+  }, [applyRecommendationsEnabled, effectiveMethodLabel, selectedMethod, status?.recommended_method]);
+  const optiPatcherDescription = useMemo(() => {
+    if (optiPatcherRecommended) {
+      return "Using OptiPatcher (recommended). Turn recommendations off to choose manually.";
+    }
+    return "Installs plugins/OptiPatcher.asi and enables [Plugins] LoadAsiPlugins=true in OptiScaler.ini.";
+  }, [optiPatcherRecommended]);
 
   const canPatch = Boolean(selectedGame && status?.status === "success" && status.prefix_exists && !busyAction);
   const canUnpatch = Boolean(selectedGame && status?.status === "success" && status.marker_name && !busyAction);
 
   const patchButtonLabel = useMemo(() => {
-    const wantsFsr4 = selectedFsr4 === "enabled";
-    const suffix = wantsFsr4 ? " + FSR4 INT8 4.0.2b" : "";
+    const selectedComponents = [
+      selectedFsr4 === "enabled" ? "FSR4 INT8 4.0.2b" : null,
+      effectiveOptiPatcherEnabled ? "OptiPatcher" : null,
+    ].filter(Boolean);
+    const suffix = selectedComponents.length ? ` + ${selectedComponents.join(" + ")}` : "";
     if (busyAction === "patch") return "Patching...";
     if (!selectedGame) return "Patch selected game";
     if (!status?.prefix_exists) return "Patch target not found";
-    if (status?.method && status.method !== selectedMethod) return `Switch to ${selectedMethodLabel}${suffix}`;
-    if (status?.reinstall_recommended || status?.fsr4_reinstall_recommended) return `Reinstall ${selectedMethodLabel}${suffix}`;
-    if (status?.upgrade_available) return `Upgrade to ${status.bundled_asset_version ?? selectedMethodLabel}`;
-    if (status?.marker_name) return `Reinstall ${selectedMethodLabel}${suffix}`;
-    return `Patch with ${selectedMethodLabel}${suffix}`;
-  }, [busyAction, selectedFsr4, selectedGame, selectedMethodLabel, selectedMethod, status]);
+    if (status?.method && status.method !== effectiveMethod) return `Switch to ${effectiveMethodLabel}${suffix}`;
+    if (status?.reinstall_recommended || status?.fsr4_reinstall_recommended || status?.optipatcher_reinstall_recommended) return `Reinstall ${effectiveMethodLabel}${suffix}`;
+    if (status?.upgrade_available) return `Upgrade to ${status.bundled_asset_version ?? effectiveMethodLabel}`;
+    if (status?.marker_name) return `Reinstall ${effectiveMethodLabel}${suffix}`;
+    return `Patch with ${effectiveMethodLabel}${suffix}`;
+  }, [busyAction, effectiveMethod, effectiveMethodLabel, effectiveOptiPatcherEnabled, selectedFsr4, selectedGame, status]);
 
   const handlePatch = useCallback(async () => {
     if (!selectedGame || !selectedAppId) return;
@@ -264,16 +332,23 @@ function Content() {
     setResultMessage("");
     try {
       const currentLaunchOptions = await getAppLaunchOptions(Number(selectedAppId));
-      const result = await patchGame(selectedAppId, selectedMethod, currentLaunchOptions, selectedFsr4 === "enabled");
+      const result = await patchGame(
+        selectedAppId,
+        selectedMethod,
+        currentLaunchOptions,
+        selectedFsr4 === "enabled",
+        applyRecommendationsEnabled,
+        selectedOptiPatcher === "enabled",
+      );
       if (result.status !== "success") {
         throw new Error(result.message || "Patch failed.");
       }
 
       setAppLaunchOptions(Number(selectedAppId), result.launch_options || "");
-      setResultMessage(result.message || `Patched ${selectedGame.name} using ${selectedMethodLabel}.`);
+      setResultMessage(result.message || `Patched ${selectedGame.name} using ${effectiveMethodLabel}.`);
       toaster.toast({
         title: "DLSS Enabler",
-        body: result.message || `Patched ${selectedGame.name} using ${selectedMethodLabel}.`,
+        body: result.message || `Patched ${selectedGame.name} using ${effectiveMethodLabel}.`,
       });
       await loadStatus(selectedAppId);
     } catch (error) {
@@ -283,7 +358,7 @@ function Content() {
     } finally {
       setBusyAction(null);
     }
-  }, [loadStatus, selectedAppId, selectedFsr4, selectedGame, selectedMethod, selectedMethodLabel]);
+  }, [applyRecommendationsEnabled, effectiveMethodLabel, loadStatus, selectedAppId, selectedFsr4, selectedGame, selectedMethod, selectedOptiPatcher]);
 
   const handleUnpatch = useCallback(async () => {
     if (!selectedGame || !selectedAppId) return;
@@ -344,6 +419,23 @@ function Content() {
     return { text, color: "#3fb950" };
   }, [selectedGame, status]);
 
+  const optiPatcherDisplay = useMemo(() => {
+    if (!selectedGame || status?.status !== "success") {
+      return { text: "—", color: undefined as string | undefined };
+    }
+    if (!status.optipatcher_enabled) {
+      return { text: "Disabled", color: undefined as string | undefined };
+    }
+    const text = status.optipatcher_label || "OptiPatcher";
+    if (status.optipatcher_reinstall_recommended) {
+      return { text, color: "#ff7b72" };
+    }
+    if (!status.optipatcher_files_complete) {
+      return { text, color: "#ffd866" };
+    }
+    return { text, color: "#3fb950" };
+  }, [selectedGame, status]);
+
   const statusMessage = useMemo(() => {
     if (!selectedGame) return "Choose a game to manage its patch state.";
     if (statusLoading) return "Loading patch status...";
@@ -351,14 +443,22 @@ function Content() {
     if (status.status === "error") return `Error: ${status.message || "Failed to load status."}`;
     if (!status.prefix_exists) return status.message || "Patch target not found.";
     if (!status.patched) return status.message || "This game is not currently patched.";
-    if (status.reinstall_recommended || status.upgrade_available || status.fsr4_reinstall_recommended) {
+    if (status.reinstall_recommended || status.upgrade_available || status.fsr4_reinstall_recommended || status.optipatcher_reinstall_recommended) {
       return status.message || "An update is available.";
     }
     if (status.fsr4_enabled && !status.fsr4_files_complete) {
       return "FSR4 sidecar files are expected but incomplete. Reinstall recommended.";
     }
+    if (status.optipatcher_enabled && !status.optipatcher_files_complete) {
+      return "OptiPatcher files are expected but incomplete. Reinstall recommended.";
+    }
     return "";
   }, [selectedGame, status, statusLoading]);
+
+  const focusableFieldProps = {
+    focusable: true,
+    highlightOnFocus: true,
+  } as const;
 
   return (
     <PanelSection>
@@ -383,35 +483,47 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="Game">{selectedGame?.name ?? "—"}</Field>
+        <Field {...focusableFieldProps} label="Game">{selectedGame?.name ?? "—"}</Field>
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="App ID">{selectedGame?.appid ?? "—"}</Field>
+        <Field {...focusableFieldProps} label="App ID">{selectedGame?.appid ?? "—"}</Field>
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="Target ready">
+        <Field {...focusableFieldProps} label="Target ready">
           {selectedGame && status?.status === "success" ? (status.prefix_exists ? "Yes" : "No") : "—"}
         </Field>
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="Patched">
+        <Field {...focusableFieldProps} label="Patched">
           {selectedGame && status?.status === "success" ? (status.patched ? "Yes" : "No") : "—"}
         </Field>
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="Current DLL name">
+        <Field {...focusableFieldProps} label="Current DLL name">
           {selectedGame && status?.status === "success" && status.method
             ? (status.proxy_filename || `${status.method}.dll`)
             : "—"}
         </Field>
       </PanelSectionRow>
 
+      {hasRecommendationNotes ? (
+        <PanelSectionRow>
+          <Field {...focusableFieldProps} label="Recommendation notes">
+            <div>
+              {status?.recommendation_notes?.map((note, index) => (
+                <div key={`${note}-${index}`}>• {note}</div>
+              ))}
+            </div>
+          </Field>
+        </PanelSectionRow>
+      ) : null}
+
       <PanelSectionRow>
-        <Field label="DLSS Enabler version">
+        <Field {...focusableFieldProps} label="DLSS Enabler version">
           {versionDisplay.color ? (
             <span style={{ color: versionDisplay.color, fontWeight: 600 }}>{versionDisplay.text}</span>
           ) : versionDisplay.text}
@@ -419,7 +531,7 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="Bundled version">
+        <Field {...focusableFieldProps} label="Bundled version">
           {selectedGame && status?.status === "success"
             ? (status.bundled_asset_version || "—")
             : "—"}
@@ -427,7 +539,7 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="FSR4 sidecar">
+        <Field {...focusableFieldProps} label="FSR4 sidecar">
           {fsr4Display.color ? (
             <span style={{ color: fsr4Display.color, fontWeight: 600 }}>{fsr4Display.text}</span>
           ) : fsr4Display.text}
@@ -435,7 +547,15 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="OptiScaler base">
+        <Field {...focusableFieldProps} label="OptiPatcher plugin">
+          {optiPatcherDisplay.color ? (
+            <span style={{ color: optiPatcherDisplay.color, fontWeight: 600 }}>{optiPatcherDisplay.text}</span>
+          ) : optiPatcherDisplay.text}
+        </Field>
+      </PanelSectionRow>
+
+      <PanelSectionRow>
+        <Field {...focusableFieldProps} label="OptiScaler base">
           {selectedGame && status?.status === "success"
             ? (status.fsr4_enabled ? (status.fsr4_optiscaler_version || "0.7.9") : "—")
             : "—"}
@@ -444,50 +564,80 @@ function Content() {
 
       {statusMessage ? (
         <PanelSectionRow>
-          <Field label="Status">{statusMessage}</Field>
+          <Field {...focusableFieldProps} label="Status">{statusMessage}</Field>
         </PanelSectionRow>
       ) : null}
 
       <PanelSectionRow>
         <DropdownItem
           label="Injection method"
-          description={getMethodHint(selectedMethod)}
+          description={injectionMethodDescription}
           menuLabel="Injection method"
           strDefaultLabel="Choose DLL name"
-          selectedOption={selectedMethod}
-          rgOptions={METHOD_OPTIONS.map((entry) => ({ data: entry.value, label: entry.label }))}
+          selectedOption={effectiveMethod}
+          rgOptions={methodDropdownOptions}
           onChange={(option) => {
             const nextMethod = String(option.data);
             lastSelectedMethod = nextMethod;
             setSelectedMethod(nextMethod);
+          }}
+          disabled={!selectedGame || busyAction !== null || applyRecommendationsEnabled}
+        />
+      </PanelSectionRow>
+
+      {hasApplicableRecommendations ? (
+        <PanelSectionRow>
+          <ToggleField
+            label="Apply game recommendations"
+            description="Automatically use the recommended DLL name, OptiPatcher plugin, and any game-specific OptiScaler.ini overrides."
+            checked={applyRecommendationsEnabled}
+            onChange={(checked) => {
+              const nextValue = checked ? "enabled" : "disabled";
+              lastApplyRecommendations = nextValue;
+              setApplyRecommendations(nextValue);
+            }}
+            disabled={!selectedGame || busyAction !== null}
+          />
+        </PanelSectionRow>
+      ) : null}
+
+      {applyRecommendationsEnabled && selectedFsr4 === "enabled" && effectiveIniOverrideLines.length ? (
+        <PanelSectionRow>
+          <Field {...focusableFieldProps} label="Additional OptiScaler.ini overrides">
+            <div>
+              {effectiveIniOverrideLines.map((line, index) => (
+                <div key={`${line}-${index}`}>• {line}</div>
+              ))}
+            </div>
+          </Field>
+        </PanelSectionRow>
+      ) : null}
+
+      <PanelSectionRow>
+        <ToggleField
+          label="FSR4 INT8 sidecar"
+          description="Experimental: installs OptiScaler 0.7.9 FFX sidecar files plus FSR4 INT8 4.0.2b."
+          checked={selectedFsr4 === "enabled"}
+          onChange={(checked) => {
+            const nextValue = checked ? "enabled" : "disabled";
+            lastSelectedFsr4 = nextValue;
+            setSelectedFsr4(nextValue);
           }}
           disabled={!selectedGame || busyAction !== null}
         />
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field label="Selected DLL name" description="The bundled DLSS Enabler proxy will be copied into the chosen game executable directory using this filename.">
-          {selectedMethodLabel}
-        </Field>
-      </PanelSectionRow>
-
-      <PanelSectionRow>
-        <DropdownItem
-          label="FSR4 INT8 sidecar"
-          description="Experimental: installs OptiScaler 0.7.9 FFX sidecar files plus FSR4 INT8 4.0.2b."
-          menuLabel="FSR4 INT8 sidecar"
-          strDefaultLabel="Choose sidecar mode"
-          selectedOption={selectedFsr4}
-          rgOptions={[
-            { data: "disabled", label: "Disabled" },
-            { data: "enabled", label: "Enabled (4.0.2b)" },
-          ]}
-          onChange={(option) => {
-            const nextValue = String(option.data);
-            lastSelectedFsr4 = nextValue;
-            setSelectedFsr4(nextValue);
+        <ToggleField
+          label="OptiPatcher plugin"
+          description={optiPatcherDescription}
+          checked={effectiveOptiPatcherEnabled}
+          onChange={(checked) => {
+            const nextValue = checked ? "enabled" : "disabled";
+            lastSelectedOptiPatcher = nextValue;
+            setSelectedOptiPatcher(nextValue);
           }}
-          disabled={!selectedGame || busyAction !== null}
+          disabled={!selectedGame || busyAction !== null || optiPatcherRecommended}
         />
       </PanelSectionRow>
 
@@ -511,7 +661,7 @@ function Content() {
 
       {resultMessage ? (
         <PanelSectionRow>
-          <Field label="Last action">
+          <Field {...focusableFieldProps} label="Last action">
             <div>
               {resultMessage.split("\n").map((line, index) => (
                 <div key={`${line}-${index}`}>{line || "\u00A0"}</div>
