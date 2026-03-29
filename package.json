@@ -68,6 +68,16 @@
       "sha256hash": "001b419bf315da6b200b8c29bb69df37117d7efb1341dd77bdd943b22491ab36",
       "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-optipatcher-3-27-2026/OptiPatcher.asi",
       "name": "OptiPatcher.asi"
+    },
+    {
+      "sha256hash": "d98c027fbd4cc074a1c48574eecd58ded2bc9e4cb6bfc5c28d6595ab5037d371",
+      "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-fsr4.1.0/amd_fidelityfx_loader_dx12.dll",
+      "name": "amd_fidelityfx_loader_dx12.dll"
+    },
+    {
+      "sha256hash": "ec7ed3ca674e288240e6f04b986342aece47454c41d9b0959449e82e22bd7f6d",
+      "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-fsr4.1.0/amd_fidelityfx_upscaler_dx12.dll",
+      "name": "amd_fidelityfx_upscaler_dx12.dll"
     }
   ]
 }

@@ -54,6 +54,40 @@ MANAGED_FSR_PROFILES = {
             },
         ],
     },
+    "fsr4-official-4.1.0-sdk-only": {
+        "id": "fsr4-official-4.1.0-sdk-only",
+        "label": "FSR4 4.1.0 official (RDNA4, SDK-only)",
+        "family": "fsr4",
+        "fsr4_version": "4.1.0",
+        "hardware": "RDNA4",
+        "optiscaler_version": "0.7.9",
+        "release_tag": "bins-fsr4.1.0",
+        "notes": [
+            "SDK-only placeholder profile: amdxcffx64.dll is not bundled yet.",
+            "Currently installs the official AMD loader and upscaler DLLs only.",
+            "May be incomplete compared with the full official driver-backed FSR4 path.",
+        ],
+        "missing_assets": [
+            {
+                "asset_name": "amdxcffx64.dll",
+                "placeholder_download_url": "https://download.amd.com/dir/bin/amdxcffx64.dll/69A0952A304a000/amdxcffx64.dll",
+            }
+        ],
+        "assets": [
+            {
+                "asset_name": "amd_fidelityfx_loader_dx12.dll",
+                "target_name": "amd_fidelityfx_dx12.dll",
+                "sha256": "d98c027fbd4cc074a1c48574eecd58ded2bc9e4cb6bfc5c28d6595ab5037d371",
+                "kind": "ffx-loader",
+            },
+            {
+                "asset_name": "amd_fidelityfx_upscaler_dx12.dll",
+                "target_name": "amd_fidelityfx_upscaler_dx12.dll",
+                "sha256": "ec7ed3ca674e288240e6f04b986342aece47454c41d9b0959449e82e22bd7f6d",
+                "kind": "fsr4-upscaler",
+            },
+        ],
+    },
 }
 DEFAULT_FSR_PROFILE_ID = "fsr4-int8-4.0.2b-opti-0.7.9"
 FSR4_INT8_BUNDLE = MANAGED_FSR_PROFILES[DEFAULT_FSR_PROFILE_ID]

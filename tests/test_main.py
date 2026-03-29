@@ -119,6 +119,9 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.sidecar_upscaler_bytes = b"fake fsr4 int8 upscaler dll"
         self.sidecar_upscaler_hash = hashlib.sha256(self.sidecar_upscaler_bytes).hexdigest()
         (self.sidecar_dir / "amd_fidelityfx_upscaler_dx12.dll").write_bytes(self.sidecar_upscaler_bytes)
+        self.official_loader_bytes = b"fake official fsr loader dll"
+        self.official_loader_hash = hashlib.sha256(self.official_loader_bytes).hexdigest()
+        (self.sidecar_dir / "amd_fidelityfx_loader_dx12.dll").write_bytes(self.official_loader_bytes)
         self.optipatcher_bytes = b"fake optipatcher asi"
         self.optipatcher_hash = hashlib.sha256(self.optipatcher_bytes).hexdigest()
         (self.sidecar_dir / "OptiPatcher.asi").write_bytes(self.optipatcher_bytes)
@@ -165,6 +168,30 @@ class PatchUnpatchFlowTests(unittest.TestCase):
             ],
         }
 
+        self.fake_official_fsr_profile = {
+            "id": "fsr4-official-test-sdk-only",
+            "label": "FSR4 4.1.0 official (RDNA4, SDK-only)",
+            "family": "fsr4",
+            "fsr4_version": "4.1.0",
+            "hardware": "RDNA4",
+            "optiscaler_version": "0.7.9",
+            "release_tag": "bins-fsr4-official-test",
+            "assets": [
+                {
+                    "asset_name": "amd_fidelityfx_loader_dx12.dll",
+                    "target_name": "amd_fidelityfx_dx12.dll",
+                    "sha256": self.official_loader_hash,
+                    "kind": "ffx-loader",
+                },
+                {
+                    "asset_name": "amd_fidelityfx_upscaler_dx12.dll",
+                    "target_name": "amd_fidelityfx_upscaler_dx12.dll",
+                    "sha256": self.sidecar_upscaler_hash,
+                    "kind": "fsr4-upscaler",
+                },
+            ],
+        }
+
         self.fake_optipatcher_plugin = {
             "id": "optipatcher-test-plugin",
             "label": "OptiPatcher",
@@ -180,7 +207,10 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         self.hash_patch = mock.patch.object(plugin_main, "BUNDLED_ASSET_SHA256", self.asset_hash)
         self.fsr4_bundle_patch = mock.patch.dict(
             plugin_main.MANAGED_FSR_PROFILES,
-            {self.fake_fsr4_bundle["id"]: self.fake_fsr4_bundle},
+            {
+                self.fake_fsr4_bundle["id"]: self.fake_fsr4_bundle,
+                self.fake_official_fsr_profile["id"]: self.fake_official_fsr_profile,
+            },
             clear=True,
         )
         self.optipatcher_patch = mock.patch.object(plugin_main, "OPTIPATCHER_PLUGIN", self.fake_optipatcher_plugin)
@@ -516,6 +546,17 @@ class PatchUnpatchFlowTests(unittest.TestCase):
         config_text = (self.target_dir / plugin_main.FSR4_CONFIG_FILENAME).read_text(encoding="utf-8")
         self.assertIn("[FrameGeneration]", config_text)
         self.assertIn("Reflex=on", config_text)
+
+    def test_patch_game_with_sdk_only_official_profile_installs_renamed_loader(self):
+        result = self.run_async(self.plugin.patch_game("123", "dxgi", "", self.fake_official_fsr_profile["id"]))
+
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["fsr_profile_id"], self.fake_official_fsr_profile["id"])
+        self.assertEqual((self.target_dir / "amd_fidelityfx_dx12.dll").read_bytes(), self.official_loader_bytes)
+        self.assertEqual((self.target_dir / "amd_fidelityfx_upscaler_dx12.dll").read_bytes(), self.sidecar_upscaler_bytes)
+        marker = self.read_marker_metadata("dxgi")
+        self.assertEqual(marker["fsr_profile_id"], self.fake_official_fsr_profile["id"])
+        self.assertEqual(marker["fsr4_bundle_id"], self.fake_official_fsr_profile["id"])
 
     def test_patch_game_with_optipatcher_installs_plugin_and_config(self):
         result = self.run_async(self.plugin.patch_game("123", "dxgi", "", None, False, True))

@@ -131,6 +131,7 @@ const METHOD_OPTIONS = [
 const FSR_PROFILE_OPTIONS = [
   { value: "disabled", label: "Disabled", hint: "Do not install managed FSR sidecar files." },
   { value: "fsr4-int8-4.0.2b-opti-0.7.9", label: "FSR4 INT8 4.0.2b (RDNA2&3)", hint: "Community INT8 build for older RDNA2 and RDNA3 GPUs." },
+  { value: "fsr4-official-4.1.0-sdk-only", label: "FSR4 4.1.0 official (RDNA4, SDK-only)", hint: "Placeholder official profile: installs AMD loader + upscaler only. amdxcffx64.dll is still missing from the managed bundle." },
 ] as const;
 
 const listInstalledGames = callable<[], GameListResponse>("list_installed_games");
