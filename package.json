@@ -78,6 +78,11 @@
       "sha256hash": "ec7ed3ca674e288240e6f04b986342aece47454c41d9b0959449e82e22bd7f6d",
       "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-fsr4.1.0/amd_fidelityfx_upscaler_dx12.dll",
       "name": "amd_fidelityfx_upscaler_dx12.dll"
+    },
+    {
+      "sha256hash": "7f1139e67c3a1828d7d43d63dc6104fbb1fbbe7a9a987f781dd7cf5361c6ee76",
+      "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-fsr4.1.0/amdxcffx64.dll",
+      "name": "amdxcffx64.dll"
     }
   ]
 }
