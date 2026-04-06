@@ -50,8 +50,8 @@
   "remote_binary_bundling": true,
   "remote_binary": [
     {
-      "sha256hash": "7357292a3ced57c194f60bd2cbfc8f3837604b2365af114a2a4bc61508e9d5c6",
-      "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-dlss-enabler-4.4.0.2-dev/version.dll",
+      "sha256hash": "9bcede3cfb1654b83cd4b2f34852d6a317ab5f759bb4a62a6616a77b1f61565e",
+      "url": "https://github.com/xXJSONDeruloXx/decky-dlss-enabler/releases/download/bins-dlss-enabler-4.5.2/version.dll",
       "name": "version.dll"
     },
     {
