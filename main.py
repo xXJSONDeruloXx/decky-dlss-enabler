@@ -27,8 +27,13 @@ KNOWN_DLSS_ENABLER_ASSETS = [
         "sha256": "9bcede3cfb1654b83cd4b2f34852d6a317ab5f759bb4a62a6616a77b1f61565e",
         "release_tag": "bins-dlss-enabler-4.5.2",
     },
+    {
+        "version": "4.5.3",
+        "sha256": "4725ce3c469384860d5f46f4548e2929d6a3eb532adf714ba637bc71cee78403",
+        "release_tag": "bins-diss-enabler-4.5.3",
+    },
 ]
-CURRENT_DLSS_ENABLER_VERSION = "4.5.2"
+CURRENT_DLSS_ENABLER_VERSION = "4.5.3"
 KNOWN_DLSS_ENABLER_ASSETS_BY_VERSION = {
     asset["version"]: asset for asset in KNOWN_DLSS_ENABLER_ASSETS
 }
