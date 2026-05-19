@@ -3,6 +3,7 @@ import hashlib
 import os
 import re
 import shutil
+import struct
 import subprocess
 import unicodedata
 from datetime import datetime, timezone
@@ -526,6 +527,115 @@ class Plugin:
 
         return library_paths
 
+    def _parse_shortcuts_vdf(self, path: Path) -> list[dict]:
+        try:
+            data = path.read_bytes()
+        except Exception as exc:
+            self._log(f"failed to read shortcuts.vdf: {path} error={exc}")
+            return []
+
+        entries: list[dict] = []
+        pos = 0
+        length = len(data)
+
+        def read_string(offset: int) -> tuple[str, int]:
+            end = data.index(b"\x00", offset)
+            return data[offset:end].decode("utf-8", errors="replace"), end + 1
+
+        while pos < length:
+            tag = data[pos]
+            if tag == 0x08:
+                pos += 1
+                if entries and entries[-1].get("_collecting"):
+                    entries[-1].pop("_collecting", None)
+                continue
+            if tag == 0x00:
+                pos += 1
+                _, pos = read_string(pos)
+                if not entries or not entries[-1].get("_collecting"):
+                    entries.append({"_collecting": True})
+                continue
+            if tag == 0x01:
+                pos += 1
+                key, pos = read_string(pos)
+                value, pos = read_string(pos)
+                if entries and entries[-1].get("_collecting"):
+                    entries[-1][key.lower()] = value
+                continue
+            if tag == 0x02:
+                pos += 1
+                key, pos = read_string(pos)
+                if pos + 4 <= length:
+                    value = struct.unpack("<i", data[pos:pos + 4])[0]
+                    pos += 4
+                    if entries and entries[-1].get("_collecting"):
+                        entries[-1][key.lower()] = value
+                else:
+                    break
+                continue
+            pos += 1
+
+        results: list[dict] = []
+        for entry in entries:
+            entry.pop("_collecting", None)
+            appname = entry.get("appname") or entry.get("name") or ""
+            appid_value = entry.get("appid")
+            exe = entry.get("exe") or ""
+            start_dir = entry.get("startdir") or ""
+            if not appname or appid_value is None:
+                continue
+            results.append({
+                "appid": appid_value,
+                "appname": appname,
+                "exe": exe.strip('"'),
+                "start_dir": start_dir.strip('"'),
+                "launch_options": entry.get("launchoptions") or "",
+            })
+        return results
+
+    def _find_shortcut_games(self, appid: str | None = None) -> list[dict]:
+        games: list[dict] = []
+        seen_appids: set[str] = set()
+
+        for steam_root in self._steam_root_candidates():
+            userdata_dir = steam_root / "userdata"
+            if not userdata_dir.exists():
+                continue
+            try:
+                user_dirs = [d for d in userdata_dir.iterdir() if d.is_dir()]
+            except Exception:
+                continue
+            for user_dir in user_dirs:
+                shortcuts_file = user_dir / "config" / "shortcuts.vdf"
+                if not shortcuts_file.exists():
+                    continue
+                for entry in self._parse_shortcuts_vdf(shortcuts_file):
+                    raw_appid = entry["appid"]
+                    unsigned_appid = str(raw_appid & 0xFFFFFFFF)
+                    if unsigned_appid in seen_appids:
+                        continue
+
+                    install_path = entry["start_dir"]
+                    if not install_path and entry["exe"]:
+                        install_path = str(Path(entry["exe"]).parent)
+                    if not install_path:
+                        continue
+
+                    game_info = {
+                        "appid": unsigned_appid,
+                        "name": entry["appname"],
+                        "install_path": install_path,
+                        "is_shortcut": True,
+                    }
+
+                    if appid is not None and str(unsigned_appid) != str(appid):
+                        continue
+
+                    seen_appids.add(unsigned_appid)
+                    games.append(game_info)
+
+        return sorted(games, key=lambda entry: entry["name"].lower())
+
     def _find_installed_games(self, appid: str | None = None) -> list[dict]:
         games: list[dict] = []
 
@@ -581,7 +691,10 @@ class Plugin:
 
     def _game_record(self, appid: str) -> dict | None:
         matches = self._find_installed_games(appid)
-        return matches[0] if matches else None
+        if matches:
+            return matches[0]
+        shortcut_matches = self._find_shortcut_games(appid)
+        return shortcut_matches[0] if shortcut_matches else None
 
     def _normalized_path_string(self, value: str) -> str:
         normalized = value.lower().replace("\\", "/")
@@ -1229,15 +1342,33 @@ class Plugin:
     async def list_installed_games(self) -> dict:
         try:
             games = []
+            seen_appids: set[str] = set()
             for game in self._find_installed_games():
+                aid = str(game["appid"])
                 install_root = Path(game["install_path"])
                 games.append(
                     {
-                        "appid": str(game["appid"]),
+                        "appid": aid,
                         "name": game["name"],
                         "prefix_exists": install_root.exists(),
+                        "is_shortcut": False,
                     }
                 )
+                seen_appids.add(aid)
+            for game in self._find_shortcut_games():
+                aid = str(game["appid"])
+                if aid in seen_appids:
+                    continue
+                install_root = Path(game["install_path"])
+                games.append(
+                    {
+                        "appid": aid,
+                        "name": game["name"],
+                        "prefix_exists": install_root.exists(),
+                        "is_shortcut": True,
+                    }
+                )
+                seen_appids.add(aid)
             return {"status": "success", "games": games}
         except Exception as exc:
             self._log(f"list_installed_games failed: {exc}")
