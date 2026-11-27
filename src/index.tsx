@@ -10,6 +10,7 @@ import {
 import { callable, definePlugin, toaster } from "@decky/api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FaPlug } from "react-icons/fa";
+import { L } from "./i18n";
 
 type GameInfo = {
   appid: string;
@@ -113,15 +114,15 @@ type UnpatchResponse = {
 };
 
 const METHOD_OPTIONS = [
-  { value: "version", label: "version.dll", hint: "Default for most games." },
-  { value: "winmm", label: "winmm.dll", hint: "Good fallback when a game already uses version.dll." },
-  { value: "d3d11", label: "d3d11.dll", hint: "Use for DirectX 11 games." },
-  { value: "d3d12", label: "d3d12.dll", hint: "Use for DirectX 12 games." },
-  { value: "dinput8", label: "dinput8.dll", hint: "Use for DirectInput hook paths." },
-  { value: "dxgi", label: "dxgi.dll", hint: "Use for DXGI-based hook paths." },
-  { value: "wininet", label: "wininet.dll", hint: "Use for games that respond to WinINet hooking." },
-  { value: "winhttp", label: "winhttp.dll", hint: "Use for games that respond to WinHTTP hooking." },
-  { value: "dbghelp", label: "dbghelp.dll", hint: "Use for Debug Help Library hook paths." },
+  { value: "version", label: "version.dll", hint: () => L("Default for most games.", "多數遊戲的預設選項。") },
+  { value: "winmm", label: "winmm.dll", hint: () => L("Good fallback when a game already uses version.dll.", "當遊戲本身已使用 version.dll 時的理想備援。") },
+  { value: "d3d11", label: "d3d11.dll", hint: () => L("Use for DirectX 11 games.", "適用於 DirectX 11 遊戲。") },
+  { value: "d3d12", label: "d3d12.dll", hint: () => L("Use for DirectX 12 games.", "適用於 DirectX 12 遊戲。") },
+  { value: "dinput8", label: "dinput8.dll", hint: () => L("Use for DirectInput hook paths.", "適用於 DirectInput 掛鉤路徑。") },
+  { value: "dxgi", label: "dxgi.dll", hint: () => L("Use for DXGI-based hook paths.", "適用於 DXGI 掛鉤路徑。") },
+  { value: "wininet", label: "wininet.dll", hint: () => L("Use for games that respond to WinINet hooking.", "適用於支援 WinINet 掛鉤的遊戲。") },
+  { value: "winhttp", label: "winhttp.dll", hint: () => L("Use for games that respond to WinHTTP hooking.", "適用於支援 WinHTTP 掛鉤的遊戲。") },
+  { value: "dbghelp", label: "dbghelp.dll", hint: () => L("Use for Debug Help Library hook paths.", "適用於 Debug Help 函式庫掛鉤路徑。") },
 ] as const;
 
 const listInstalledGames = callable<[], GameListResponse>("list_installed_games");
@@ -133,7 +134,7 @@ const patchGame = callable<
 const unpatchGame = callable<[appid: string], UnpatchResponse>("unpatch_game");
 
 const getMethodHint = (method: string) =>
-  METHOD_OPTIONS.find((entry) => entry.value === method)?.hint ?? "";
+  METHOD_OPTIONS.find((entry) => entry.value === method)?.hint() ?? "";
 
 const getAppLaunchOptions = (appid: number): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -144,7 +145,7 @@ const getAppLaunchOptions = (appid: number): Promise<string> =>
       if (settled) return;
       settled = true;
       unregister();
-      reject(new Error("Timed out while loading the current launch options."));
+      reject(new Error(L("Timed out while loading the current launch options.", "讀取目前啟動選項逾時。")));
     }, 5000);
 
     const registration = SteamClient.Apps.RegisterForAppDetails(appid, (details: { strLaunchOptions?: string }) => {
@@ -187,7 +188,7 @@ function Content() {
     try {
       const result = await listInstalledGames();
       if (result.status !== "success") {
-        throw new Error(result.message || "Failed to load installed games.");
+        throw new Error(result.message || L("Failed to load installed games.", "無法載入已安裝的遊戲。"));
       }
 
       setGames(result.games);
@@ -206,8 +207,8 @@ function Content() {
         return nextAppId;
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load installed games.";
-      setResultMessage(`Error: ${message}`);
+      const message = error instanceof Error ? error.message : L("Failed to load installed games.", "無法載入已安裝的遊戲。");
+      setResultMessage(L(`Error: ${message}`, `錯誤：${message}`));
       toaster.toast({ title: "DLSS Enabler", body: message });
     } finally {
       setGamesLoading(false);
@@ -237,7 +238,7 @@ function Content() {
         setSelectedOptiPatcher(nextOptiPatcher);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load game status.";
+      const message = error instanceof Error ? error.message : L("Failed to load game status.", "無法載入遊戲狀態。");
       setStatus({ status: "error", message });
     } finally {
       setStatusLoading(false);
@@ -264,7 +265,7 @@ function Content() {
   const methodDropdownOptions = useMemo(
     () => METHOD_OPTIONS.map((entry) => ({
       data: entry.value,
-      label: entry.value === status?.recommended_method ? `${entry.label} (recommended)` : entry.label,
+      label: entry.value === status?.recommended_method ? `${entry.label} ${L("(recommended)", "（建議）")}` : entry.label,
     })),
     [status?.recommended_method],
   );
@@ -296,15 +297,24 @@ function Content() {
   );
   const injectionMethodDescription = useMemo(() => {
     if (applyRecommendationsEnabled && status?.recommended_method) {
-      return `Using ${effectiveMethodLabel} (recommended). Turn recommendations off to choose manually.`;
+      return L(
+        `Using ${effectiveMethodLabel} (recommended). Turn recommendations off to choose manually.`,
+        `使用 ${effectiveMethodLabel}（建議）。若要手動選擇請關閉遊戲建議設定。`,
+      );
     }
     return getMethodHint(selectedMethod);
   }, [applyRecommendationsEnabled, effectiveMethodLabel, selectedMethod, status?.recommended_method]);
   const optiPatcherDescription = useMemo(() => {
     if (optiPatcherRecommended) {
-      return "Using OptiPatcher (recommended). Turn recommendations off to choose manually.";
+      return L(
+        "Using OptiPatcher (recommended). Turn recommendations off to choose manually.",
+        "使用 OptiPatcher（建議）。若要手動選擇請關閉遊戲建議設定。",
+      );
     }
-    return "Installs plugins/OptiPatcher.asi and enables [Plugins] LoadAsiPlugins=true in OptiScaler.ini.";
+    return L(
+      "Installs plugins/OptiPatcher.asi and enables [Plugins] LoadAsiPlugins=true in OptiScaler.ini.",
+      "安裝 plugins/OptiPatcher.asi 並在 OptiScaler.ini 中啟用 [Plugins] LoadAsiPlugins=true。",
+    );
   }, [optiPatcherRecommended]);
 
   const canPatch = Boolean(selectedGame && status?.status === "success" && status.prefix_exists && !busyAction);
@@ -316,14 +326,14 @@ function Content() {
       effectiveOptiPatcherEnabled ? "OptiPatcher" : null,
     ].filter(Boolean);
     const suffix = selectedComponents.length ? ` + ${selectedComponents.join(" + ")}` : "";
-    if (busyAction === "patch") return "Patching...";
-    if (!selectedGame) return "Patch selected game";
-    if (!status?.prefix_exists) return "Patch target not found";
-    if (status?.method && status.method !== effectiveMethod) return `Switch to ${effectiveMethodLabel}${suffix}`;
-    if (status?.reinstall_recommended || status?.fsr4_reinstall_recommended || status?.optipatcher_reinstall_recommended) return `Reinstall ${effectiveMethodLabel}${suffix}`;
-    if (status?.upgrade_available) return `Upgrade to ${status.bundled_asset_version ?? effectiveMethodLabel}`;
-    if (status?.marker_name) return `Reinstall ${effectiveMethodLabel}${suffix}`;
-    return `Patch with ${effectiveMethodLabel}${suffix}`;
+    if (busyAction === "patch") return L("Patching...", "正在套用修補...");
+    if (!selectedGame) return L("Patch selected game", "修補所選遊戲");
+    if (!status?.prefix_exists) return L("Patch target not found", "找不到修補目標");
+    if (status?.method && status.method !== effectiveMethod) return L(`Switch to ${effectiveMethodLabel}${suffix}`, `切換為 ${effectiveMethodLabel}${suffix}`);
+    if (status?.reinstall_recommended || status?.fsr4_reinstall_recommended || status?.optipatcher_reinstall_recommended) return L(`Reinstall ${effectiveMethodLabel}${suffix}`, `重新安裝 ${effectiveMethodLabel}${suffix}`);
+    if (status?.upgrade_available) return L(`Upgrade to ${status.bundled_asset_version ?? effectiveMethodLabel}`, `升級至 ${status.bundled_asset_version ?? effectiveMethodLabel}`);
+    if (status?.marker_name) return L(`Reinstall ${effectiveMethodLabel}${suffix}`, `重新安裝 ${effectiveMethodLabel}${suffix}`);
+    return L(`Patch with ${effectiveMethodLabel}${suffix}`, `以 ${effectiveMethodLabel}${suffix} 修補`);
   }, [busyAction, effectiveMethod, effectiveMethodLabel, effectiveOptiPatcherEnabled, selectedFsr4, selectedGame, status]);
 
   const handlePatch = useCallback(async () => {
@@ -342,19 +352,19 @@ function Content() {
         selectedOptiPatcher === "enabled",
       );
       if (result.status !== "success") {
-        throw new Error(result.message || "Patch failed.");
+        throw new Error(result.message || L("Patch failed.", "修補失敗。"));
       }
 
       setAppLaunchOptions(Number(selectedAppId), result.launch_options || "");
-      setResultMessage(result.message || `Patched ${selectedGame.name} using ${effectiveMethodLabel}.`);
+      setResultMessage(result.message || L(`Patched ${selectedGame.name} using ${effectiveMethodLabel}.`, `已使用 ${effectiveMethodLabel} 修補 ${selectedGame.name}。`));
       toaster.toast({
         title: "DLSS Enabler",
-        body: result.message || `Patched ${selectedGame.name} using ${effectiveMethodLabel}.`,
+        body: result.message || L(`Patched ${selectedGame.name} using ${effectiveMethodLabel}.`, `已使用 ${effectiveMethodLabel} 修補 ${selectedGame.name}。`),
       });
       await loadStatus(selectedAppId);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Patch failed.";
-      setResultMessage(`Error: ${message}`);
+      const message = error instanceof Error ? error.message : L("Patch failed.", "修補失敗。");
+      setResultMessage(L(`Error: ${message}`, `錯誤：${message}`));
       toaster.toast({ title: "DLSS Enabler", body: message });
     } finally {
       setBusyAction(null);
@@ -369,19 +379,19 @@ function Content() {
     try {
       const result = await unpatchGame(selectedAppId);
       if (result.status !== "success") {
-        throw new Error(result.message || "Unpatch failed.");
+        throw new Error(result.message || L("Unpatch failed.", "還原修補失敗。"));
       }
 
       setAppLaunchOptions(Number(selectedAppId), result.launch_options || "");
-      setResultMessage(result.message || `Unpatched ${selectedGame.name}.`);
+      setResultMessage(result.message || L(`Unpatched ${selectedGame.name}.`, `已還原 ${selectedGame.name} 的修補。`));
       toaster.toast({
         title: "DLSS Enabler",
-        body: result.message || `Unpatched ${selectedGame.name}.`,
+        body: result.message || L(`Unpatched ${selectedGame.name}.`, `已還原 ${selectedGame.name} 的修補。`),
       });
       await loadStatus(selectedAppId);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unpatch failed.";
-      setResultMessage(`Error: ${message}`);
+      const message = error instanceof Error ? error.message : L("Unpatch failed.", "還原修補失敗。");
+      setResultMessage(L(`Error: ${message}`, `錯誤：${message}`));
       toaster.toast({ title: "DLSS Enabler", body: message });
     } finally {
       setBusyAction(null);
@@ -393,7 +403,7 @@ function Content() {
       return { text: "—", color: undefined as string | undefined };
     }
 
-    const text = status.installed_asset_version || status.marker_asset_version || "Unknown";
+    const text = status.installed_asset_version || status.marker_asset_version || L("Unknown", "未知");
     if (status.reinstall_recommended) {
       return { text, color: "#ff7b72" };
     }
@@ -408,7 +418,7 @@ function Content() {
       return { text: "—", color: undefined as string | undefined };
     }
     if (!status.fsr4_enabled) {
-      return { text: "Disabled", color: undefined as string | undefined };
+      return { text: L("Disabled", "已停用"), color: undefined as string | undefined };
     }
     const text = status.fsr4_label || "FSR4 INT8 4.0.2b";
     if (status.fsr4_reinstall_recommended) {
@@ -425,7 +435,7 @@ function Content() {
       return { text: "—", color: undefined as string | undefined };
     }
     if (!status.optipatcher_enabled) {
-      return { text: "Disabled", color: undefined as string | undefined };
+      return { text: L("Disabled", "已停用"), color: undefined as string | undefined };
     }
     const text = status.optipatcher_label || "OptiPatcher";
     if (status.optipatcher_reinstall_recommended) {
@@ -438,20 +448,20 @@ function Content() {
   }, [selectedGame, status]);
 
   const statusMessage = useMemo(() => {
-    if (!selectedGame) return "Choose a game to manage its patch state.";
-    if (statusLoading) return "Loading patch status...";
-    if (!status) return "No status loaded yet.";
-    if (status.status === "error") return `Error: ${status.message || "Failed to load status."}`;
-    if (!status.prefix_exists) return status.message || "Patch target not found.";
-    if (!status.patched) return status.message || "This game is not currently patched.";
+    if (!selectedGame) return L("Choose a game to manage its patch state.", "請選擇一款遊戲以管理修補狀態。");
+    if (statusLoading) return L("Loading patch status...", "正在載入修補狀態...");
+    if (!status) return L("No status loaded yet.", "尚未載入狀態。");
+    if (status.status === "error") return L(`Error: ${status.message || "Failed to load status."}`, `錯誤：${status.message || "無法載入狀態。"}`);
+    if (!status.prefix_exists) return status.message || L("Patch target not found.", "找不到修補目標。");
+    if (!status.patched) return status.message || L("This game is not currently patched.", "此遊戲目前尚未修補。");
     if (status.reinstall_recommended || status.upgrade_available || status.fsr4_reinstall_recommended || status.optipatcher_reinstall_recommended) {
-      return status.message || "An update is available.";
+      return status.message || L("An update is available.", "有可用的更新。");
     }
     if (status.fsr4_enabled && !status.fsr4_files_complete) {
-      return "FSR4 sidecar files are expected but incomplete. Reinstall recommended.";
+      return L("FSR4 sidecar files are expected but incomplete. Reinstall recommended.", "FSR4 輔助檔案預期存在但不完整，建議重新安裝。");
     }
     if (status.optipatcher_enabled && !status.optipatcher_files_complete) {
-      return "OptiPatcher files are expected but incomplete. Reinstall recommended.";
+      return L("OptiPatcher files are expected but incomplete. Reinstall recommended.", "OptiPatcher 檔案預期存在但不完整，建議重新安裝。");
     }
     return "";
   }, [selectedGame, status, statusLoading]);
@@ -465,14 +475,14 @@ function Content() {
     <PanelSection>
       <PanelSectionRow>
         <DropdownItem
-          label="Target game"
-          menuLabel="Installed games"
-          strDefaultLabel={gamesLoading ? "Loading installed games..." : "Choose a game"}
+          label={L("Target game", "目標遊戲")}
+          menuLabel={L("Installed games", "已安裝的遊戲")}
+          strDefaultLabel={gamesLoading ? L("Loading installed games...", "正在載入已安裝遊戲...") : L("Choose a game", "選擇遊戲")}
           disabled={gamesLoading || games.length === 0}
           selectedOption={selectedAppId}
           rgOptions={games.map((game) => {
-            const suffix = game.is_shortcut ? " [Non-Steam]" : "";
-            const notFound = game.prefix_exists ? "" : " (target not found)";
+            const suffix = game.is_shortcut ? L(" [Non-Steam]", " [非 Steam]") : "";
+            const notFound = game.prefix_exists ? "" : L(" (target not found)", "（找不到目標）");
             return { data: game.appid, label: `${game.name}${notFound}${suffix}` };
           })}
           onChange={(option) => {
@@ -485,7 +495,7 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field {...focusableFieldProps} label="Game">{selectedGame?.name ?? "—"}</Field>
+        <Field {...focusableFieldProps} label={L("Game", "遊戲名稱")}>{selectedGame?.name ?? "—"}</Field>
       </PanelSectionRow>
 
       <PanelSectionRow>
@@ -493,19 +503,19 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field {...focusableFieldProps} label="Target ready">
-          {selectedGame && status?.status === "success" ? (status.prefix_exists ? "Yes" : "No") : "—"}
+        <Field {...focusableFieldProps} label={L("Target ready", "目標就緒")}>
+          {selectedGame && status?.status === "success" ? (status.prefix_exists ? L("Yes", "是") : L("No", "否")) : "—"}
         </Field>
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field {...focusableFieldProps} label="Patched">
-          {selectedGame && status?.status === "success" ? (status.patched ? "Yes" : "No") : "—"}
+        <Field {...focusableFieldProps} label={L("Patched", "已修補")}>
+          {selectedGame && status?.status === "success" ? (status.patched ? L("Yes", "是") : L("No", "否")) : "—"}
         </Field>
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field {...focusableFieldProps} label="Current DLL name">
+        <Field {...focusableFieldProps} label={L("Current DLL name", "目前 DLL 名稱")}>
           {selectedGame && status?.status === "success" && status.method
             ? (status.proxy_filename || `${status.method}.dll`)
             : "—"}
@@ -514,7 +524,7 @@ function Content() {
 
       {hasRecommendationNotes ? (
         <PanelSectionRow>
-          <Field {...focusableFieldProps} label="Recommendation notes">
+          <Field {...focusableFieldProps} label={L("Recommendation notes", "建議備註")}>
             <div>
               {status?.recommendation_notes?.map((note, index) => (
                 <div key={`${note}-${index}`}>• {note}</div>
@@ -525,7 +535,7 @@ function Content() {
       ) : null}
 
       <PanelSectionRow>
-        <Field {...focusableFieldProps} label="DLSS Enabler version">
+        <Field {...focusableFieldProps} label={L("DLSS Enabler version", "DLSS Enabler 版本")}>
           {versionDisplay.color ? (
             <span style={{ color: versionDisplay.color, fontWeight: 600 }}>{versionDisplay.text}</span>
           ) : versionDisplay.text}
@@ -533,7 +543,7 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field {...focusableFieldProps} label="Bundled version">
+        <Field {...focusableFieldProps} label={L("Bundled version", "隨附版本")}>
           {selectedGame && status?.status === "success"
             ? (status.bundled_asset_version || "—")
             : "—"}
@@ -541,7 +551,7 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field {...focusableFieldProps} label="FSR4 sidecar">
+        <Field {...focusableFieldProps} label={L("FSR4 sidecar", "FSR4 輔助檔案")}>
           {fsr4Display.color ? (
             <span style={{ color: fsr4Display.color, fontWeight: 600 }}>{fsr4Display.text}</span>
           ) : fsr4Display.text}
@@ -549,7 +559,7 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field {...focusableFieldProps} label="OptiPatcher plugin">
+        <Field {...focusableFieldProps} label={L("OptiPatcher plugin", "OptiPatcher 插件")}>
           {optiPatcherDisplay.color ? (
             <span style={{ color: optiPatcherDisplay.color, fontWeight: 600 }}>{optiPatcherDisplay.text}</span>
           ) : optiPatcherDisplay.text}
@@ -557,7 +567,7 @@ function Content() {
       </PanelSectionRow>
 
       <PanelSectionRow>
-        <Field {...focusableFieldProps} label="OptiScaler base">
+        <Field {...focusableFieldProps} label={L("OptiScaler base", "OptiScaler 基底")}>
           {selectedGame && status?.status === "success"
             ? (status.fsr4_enabled ? (status.fsr4_optiscaler_version || "0.7.9") : "—")
             : "—"}
@@ -566,16 +576,16 @@ function Content() {
 
       {statusMessage ? (
         <PanelSectionRow>
-          <Field {...focusableFieldProps} label="Status">{statusMessage}</Field>
+          <Field {...focusableFieldProps} label={L("Status", "狀態")}>{statusMessage}</Field>
         </PanelSectionRow>
       ) : null}
 
       <PanelSectionRow>
         <DropdownItem
-          label="Injection method"
+          label={L("Injection method", "注入方式")}
           description={injectionMethodDescription}
-          menuLabel="Injection method"
-          strDefaultLabel="Choose DLL name"
+          menuLabel={L("Injection method", "注入方式")}
+          strDefaultLabel={L("Choose DLL name", "選擇 DLL 名稱")}
           selectedOption={effectiveMethod}
           rgOptions={methodDropdownOptions}
           onChange={(option) => {
@@ -590,8 +600,11 @@ function Content() {
       {hasApplicableRecommendations ? (
         <PanelSectionRow>
           <ToggleField
-            label="Apply game recommendations"
-            description="Automatically use the recommended DLL name, OptiPatcher plugin, and any game-specific OptiScaler.ini overrides."
+            label={L("Apply game recommendations", "套用遊戲建議設定")}
+            description={L(
+              "Automatically use the recommended DLL name, OptiPatcher plugin, and any game-specific OptiScaler.ini overrides.",
+              "自動使用建議的 DLL 名稱、OptiPatcher 插件與特定遊戲的 OptiScaler.ini 覆寫設定。",
+            )}
             checked={applyRecommendationsEnabled}
             onChange={(checked) => {
               const nextValue = checked ? "enabled" : "disabled";
@@ -605,7 +618,7 @@ function Content() {
 
       {applyRecommendationsEnabled && selectedFsr4 === "enabled" && effectiveIniOverrideLines.length ? (
         <PanelSectionRow>
-          <Field {...focusableFieldProps} label="Additional OptiScaler.ini overrides">
+          <Field {...focusableFieldProps} label={L("Additional OptiScaler.ini overrides", "額外 OptiScaler.ini 覆寫")}>
             <div>
               {effectiveIniOverrideLines.map((line, index) => (
                 <div key={`${line}-${index}`}>• {line}</div>
@@ -617,8 +630,11 @@ function Content() {
 
       <PanelSectionRow>
         <ToggleField
-          label="FSR4 INT8 sidecar"
-          description="Experimental: installs OptiScaler 0.7.9 FFX sidecar files plus FSR4 INT8 4.0.2b."
+          label={L("FSR4 INT8 sidecar", "FSR4 INT8 輔助檔案")}
+          description={L(
+            "Experimental: installs OptiScaler 0.7.9 FFX sidecar files plus FSR4 INT8 4.0.2b.",
+            "實驗性：安裝 OptiScaler 0.7.9 FFX 輔助檔案與 FSR4 INT8 4.0.2b。",
+          )}
           checked={selectedFsr4 === "enabled"}
           onChange={(checked) => {
             const nextValue = checked ? "enabled" : "disabled";
@@ -631,7 +647,7 @@ function Content() {
 
       <PanelSectionRow>
         <ToggleField
-          label="OptiPatcher plugin"
+          label={L("OptiPatcher plugin", "OptiPatcher 插件")}
           description={optiPatcherDescription}
           checked={effectiveOptiPatcherEnabled}
           onChange={(checked) => {
@@ -651,19 +667,19 @@ function Content() {
 
       <PanelSectionRow>
         <ButtonItem layout="below" onClick={handleUnpatch} disabled={!canUnpatch}>
-          {busyAction === "unpatch" ? "Unpatching..." : "Unpatch selected game"}
+          {busyAction === "unpatch" ? L("Unpatching...", "正在還原修補...") : L("Unpatch selected game", "還原所選遊戲修補")}
         </ButtonItem>
       </PanelSectionRow>
 
       <PanelSectionRow>
         <ButtonItem layout="below" onClick={() => selectedAppId && void loadStatus(selectedAppId)} disabled={!selectedAppId || busyAction !== null || statusLoading}>
-          {statusLoading ? "Refreshing..." : "Refresh selected game status"}
+          {statusLoading ? L("Refreshing...", "正在重新整理...") : L("Refresh selected game status", "重新整理所選遊戲狀態")}
         </ButtonItem>
       </PanelSectionRow>
 
       {resultMessage ? (
         <PanelSectionRow>
-          <Field {...focusableFieldProps} label="Last action">
+          <Field {...focusableFieldProps} label={L("Last action", "最近操作")}>
             <div>
               {resultMessage.split("\n").map((line, index) => (
                 <div key={`${line}-${index}`}>{line || "\u00A0"}</div>
